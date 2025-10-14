@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { Dropdown } from "react-native-element-dropdown";
 import { RadioButton } from "react-native-paper";
 
 // Interface for dropdown items
@@ -48,54 +49,14 @@ interface FormData {
 interface Step2Props {
   formData: FormData;
   handleChange: (field: keyof FormData, value: any) => void;
+  errors?: { [key: string]: string };
 }
 
-const Step2: React.FC<Step2Props> = ({ formData, handleChange }) => {
+const Step2: React.FC<Step2Props> = ({ formData, handleChange, errors = {} }) => {
   const [descriptionLength, setDescriptionLength] = useState<number>(
     formData.business_idea?.length || 0
   );
 
-  // Simple dropdown component
-  const SimpleDropdown: React.FC<{
-    data: DropdownItem[];
-    value: string;
-    onSelect: (item: DropdownItem) => void;
-    placeholder: string;
-  }> = ({ data, value, onSelect, placeholder }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const selectedItem = data.find(item => item.value === value);
-    
-    return (
-      <View>
-        <TouchableOpacity
-          style={styles.dropdown}
-          onPress={() => setIsOpen(!isOpen)}
-        >
-          <Text style={selectedItem ? styles.selectedTextStyle : styles.placeholderStyle}>
-            {selectedItem ? selectedItem.label : placeholder}
-          </Text>
-        </TouchableOpacity>
-        {isOpen && (
-          <View style={styles.dropdownContainer}>
-            <ScrollView style={{ maxHeight: 200 }}>
-              {data.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    onSelect(item);
-                    setIsOpen(false);
-                  }}
-                >
-                  <Text style={styles.itemTextStyle}>{item.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-      </View>
-    );
-  };
   const [isOtherSectorSelected, setIsOtherSectorSelected] = useState<boolean>(false);
   const [isOtherSubSectorSelected, setIsOtherSubSectorSelected] = useState<boolean>(false);
 
@@ -196,7 +157,7 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange }) => {
 
       <Text style={styles.label}>Business/Idea *</Text>
       <TextInput
-        style={[styles.input, { height: 100, textAlignVertical: "top" }]}
+        style={[styles.input, { height: 100, textAlignVertical: "top" }, errors.business_idea && styles.errorInput]}
         placeholder="Firm/Brand/Practice"
         placeholderTextColor="#94A3B8"
         value={formData.business_idea}
@@ -206,6 +167,7 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange }) => {
         accessible={true}
         accessibilityLabel="business_idea"
       />
+      {errors.business_idea && <Text style={styles.errorMessage}>{errors.business_idea}</Text>}
       <View style={styles.charCounterContainer}>
         <Text style={styles.charCounter}>{descriptionLength}/300</Text>
         {descriptionLength >= 300 && (
@@ -216,12 +178,19 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange }) => {
       </View>
 
       <Text style={styles.label}>Domain/Sector *</Text>
-      <SimpleDropdown
+      <Dropdown
+        style={[styles.dropdown, errors.Domain_Sector && styles.errorInput]}
+        placeholderStyle={[styles.placeholderStyle, errors.Domain_Sector && styles.errorText]}
+        selectedTextStyle={[styles.selectedTextStyle, errors.Domain_Sector && styles.errorText]}
         data={Sectors}
-        value={formData.Domain_Sector}
+        maxHeight={200}
+        labelField="label"
+        valueField="value"
         placeholder="Select a domain"
-        onSelect={handleSectorChange}
+        value={formData.Domain_Sector}
+        onChange={handleSectorChange}
       />
+      {errors.Domain_Sector && <Text style={styles.errorMessage}>{errors.Domain_Sector}</Text>}
       {formData.Domain_Sector === "Other" && (
         <TextInput
           style={styles.input}
@@ -235,12 +204,19 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange }) => {
       )}
 
       <Text style={styles.label}>Sub-Domain/Subsector *</Text>
-      <SimpleDropdown
+      <Dropdown
+        style={[styles.dropdown, errors.SubDomain_Subsector && styles.errorInput]}
+        placeholderStyle={[styles.placeholderStyle, errors.SubDomain_Subsector && styles.errorText]}
+        selectedTextStyle={[styles.selectedTextStyle, errors.SubDomain_Subsector && styles.errorText]}
         data={subSectors}
-        value={formData.SubDomain_Subsector}
+        maxHeight={200}
+        labelField="label"
+        valueField="value"
         placeholder="Select a sub-domain"
-        onSelect={handleSubSectorChange}
+        value={formData.SubDomain_Subsector}
+        onChange={handleSubSectorChange}
       />
+      {errors.SubDomain_Subsector && <Text style={styles.errorMessage}>{errors.SubDomain_Subsector}</Text>}
       {formData.SubDomain_Subsector === "Other" && (
         <TextInput
           style={styles.input}
@@ -254,22 +230,36 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange }) => {
       )}
 
       <Text style={styles.label}>GPT Model *</Text>
-      <SimpleDropdown
+      <Dropdown
+        style={[styles.dropdown, errors.gptModel && styles.errorInput]}
+        placeholderStyle={[styles.placeholderStyle, errors.gptModel && styles.errorText]}
+        selectedTextStyle={[styles.selectedTextStyle, errors.gptModel && styles.errorText]}
         data={gptModles}
-        value={formData.gptModel}
+        maxHeight={200}
+        labelField="label"
+        valueField="value"
         placeholder="Select a GPT Model"
-        onSelect={handlegptModelChange}
+        value={formData.gptModel}
+        onChange={handlegptModelChange}
       />
+      {errors.gptModel && <Text style={styles.errorMessage}>{errors.gptModel}</Text>}
 
       <Text style={styles.label}>Response Format *</Text>
-      <SimpleDropdown
+      <Dropdown
+        style={[styles.dropdown, errors.responseFormat && styles.errorInput]}
+        placeholderStyle={[styles.placeholderStyle, errors.responseFormat && styles.errorText]}
+        selectedTextStyle={[styles.selectedTextStyle, errors.responseFormat && styles.errorText]}
         data={responseFormatOptions}
-        value={formData.responseFormat}
+        maxHeight={200}
+        labelField="label"
+        valueField="value"
         placeholder="Select response format"
-        onSelect={(item: DropdownItem) => handleChange("responseFormat", item.value)}
+        value={formData.responseFormat}
+        onChange={(item: DropdownItem) => handleChange("responseFormat", item.value)}
       />
+      {errors.responseFormat && <Text style={styles.errorMessage}>{errors.responseFormat}</Text>}
 
-      <View style={styles.radioContainer}>
+      <View style={[styles.radioContainer, errors.isSolvingProblem && styles.errorContainer]}>
         <Text style={styles.label}>Are you solving a problem? *</Text>
         <View style={styles.radioGroup}>
           <View style={styles.radioItem}>
@@ -297,13 +287,14 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange }) => {
             <Text>No</Text>
           </View>
         </View>
+        {errors.isSolvingProblem && <Text style={styles.errorMessage}>{errors.isSolvingProblem}</Text>}
       </View>
 
       {formData.isSolvingProblem === "yes" ? (
         <>
           <Text style={styles.label}>Main Problem to Solve * (max 100 chars)</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, errors.mainProblemSolved && styles.errorInput]}
             placeholder="e.g.,Early Stage Startups struggle to choose the right structure and miss deadlines."
             placeholderTextColor="#94A3B8"
             value={formData.mainProblemSolved}
@@ -313,6 +304,7 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange }) => {
             maxLength={100}
             accessibilityLabel="Main Problem"
           />
+          {errors.mainProblemSolved && <Text style={styles.errorMessage}>{errors.mainProblemSolved}</Text>}
         </>
       ) : null}
 
@@ -420,6 +412,24 @@ const styles = StyleSheet.create({
     padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+  },
+  errorInput: {
+    borderColor: '#EF4444',
+  },
+  errorText: {
+    color: '#EF4444',
+  },
+  errorContainer: {
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    borderRadius: 8,
+    padding: 8,
+  },
+  errorMessage: {
+    fontSize: 12,
+    color: '#EF4444',
+    marginTop: 4,
+    marginBottom: 8,
   },
 });
 

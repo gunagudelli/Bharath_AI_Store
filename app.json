@@ -4,7 +4,7 @@
     "slug": "Bharat_AI_Store",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/bharat-Eicon.png",
     "scheme": "bharataistore",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,12 +14,14 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/bharat-Eicon.png",
+        "backgroundImage": "./assets/images/bharat-Eicon.png",
+        "monochromeImage": "./assets/images/bharat-Eicon.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.bharat.ai.store",
+      "versionCode": 2
     },
     "web": {
       "output": "static",
@@ -30,7 +32,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/bharat-Eicon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -43,6 +45,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "58491ee0-4990-4c1a-83c6-3d48e8585695"
+      }
+    },
+    "owner": "oxyrice"
   }
 }

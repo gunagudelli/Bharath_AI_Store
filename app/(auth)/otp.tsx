@@ -165,6 +165,7 @@ const OTPScreen: React.FC = () => {
       setError('');
       setTimer(60);
       setOtp(Array(otpLength).fill('')); // ✅ Reset dynamic array
+      // {salt : response.data.salt,mobileOtpSession : response.data.mobileOtpSession,expiryTime : response.data.otpGeneratedTime}
       Alert.alert('Success', 'Verification code sent successfully!');
       inputRefs.current[0]?.focus();
     } catch (err) {

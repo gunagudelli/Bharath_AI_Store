@@ -6,9 +6,7 @@
 
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-// import { RootStackParamList } from '../../types/TS navigation'; // Adjust path
 
 const { height,width } = Dimensions.get('window');
 

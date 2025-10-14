@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import BASE_URL from "../../../config";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import AIRoleImage from "../AIRoleImage";
+import AIRoleImage from "../AgentCreation/AIRoleImage";
 // import CustomFAB from "./CustomFAB"; // Import the new component
 import { router } from "expo-router";
 const { width } = Dimensions.get("window");
@@ -254,14 +254,15 @@ const BharathAgentstore: React.FC = () => {
       //   agentId: assistant.agentId,
       // });
       router.push({
-        pathname: '/(screen)/GenOxyChatScreen',
+        pathname: '/userflow/GenOxyChatScreen',
         params: { 
         assistantId: assistantId,
          query: "", 
          category: "Assistant",
         agentName: assistant.name || "Assistant",
         fd: null,
-        agentId: assistant.agentId
+        agentId: assistant.agentId,
+        title: assistant.name || "Chat with Agent",
       }
       });
     }

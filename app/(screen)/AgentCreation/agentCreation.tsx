@@ -22,11 +22,9 @@ import Step4 from "./Step4";
 import Step5Preview from "./Step5Preview";
 import axios, { AxiosResponse } from "axios";
 import BASE_URL from "../../../config";
-import { useFocusEffect } from "@react-navigation/native";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { useSelector } from "react-redux";
-import { RootState } from "../../Redux/types";  // Unused import; consider removing if not needed
-import { router } from "expo-router";
+import { RootState } from "../../Redux/types";
+import { router, useLocalSearchParams } from "expo-router";
 
 const { width } = Dimensions.get("window");
 
@@ -39,7 +37,7 @@ interface CustomButtonProps {
   loading?: boolean;
 }
 
-// Interface for AgentData (inferred from API response usage)
+// Interface for AgentData (from API)
 interface AgentData {
   id?: string;
   agentName?: string;
@@ -47,6 +45,7 @@ interface AgentData {
   customDomain?: string;
   name?: string;
   gender?: string;
+  targetGender?: string | string[];
   description?: string;
   creatorExperience?: string;
   strengths?: string;
@@ -72,27 +71,67 @@ interface AgentData {
   conStarter3?: string;
   conStarter4?: string;
   contactDetails?: string;
+  customUserRole?: string;
   rateThisPlatform?: number;
   shareYourFeedback?: string;
   userExperience?: number;
   userExperienceSummary?: string;
 }
 
-// Interface for RouteParams
-interface RouteParams {
-  agentData?: AgentData;
-  selectedRole?: string;
+// Interface for FormData (used by Step components)
+interface FormData {
+  agentName: string;
+  domain: string;
+  subDomain?: string;
+  customDomain: string;
+  creatorName: string;
+  gender?: string;
+  description: string;
+  creatorExperience: string;
+  strengths: string;
+  language: string;
+  voiceStatus: boolean;
+  business_idea: string;
+  Domain_Sector: string;
+  customDomain_Sector?: string;
+  SubDomain_Subsector: string;
+  customSubDomain_Subsector?: string;
+  GPT_Model: string;
+  gptModel: string;
+  targetUser?: string | string[];
+  isSolvingProblem?: string;
+  mainProblemSolved?: string;
+  uniqueSolution?: string;
+  business?: string;
+  targetCustomers: string[];
+  targetAgeLimit: string[];
+  targetGender: string[];
+  conversationTone: string;
+  responseFormat: string;
+  usageModel: string;
+  instructions: string;
+  conStarter1: string;
+  conStarter2: string;
+  conStarter3: string;
+  conStarter4: string;
+  contactDetails?: string;
+  userRole: string;
+  customUserRole?: string;
+  rateThisPlatform: number;
+  shareYourFeedback?: string;
+  userExperience: number;
+  userExperienceSummary?: string;
+  agentId: string;
+  ageLimit?: string | string[];
+  shareContactDetails?: string;
+  activeStatus?: boolean;
 }
 
-// Interface for AgentCreationScreen props
-interface AgentCreationScreenProps {
-  route: { params?: RouteParams };
-}
-
-// Interface for AgentFormData state
+// Interface for AgentFormData (internal state)
 interface AgentFormData {
   agentName: string;
   domain: string;
+  subDomain?: string;
   customDomain: string;
   creatorName: string;
   gender: string;
@@ -132,6 +171,25 @@ interface AgentFormData {
   userExperience: number;
   userExperienceSummary: string;
   agentId: string;
+  ageLimit?: string[];
+  shareContactDetails?: string;
+  activeStatus?: boolean;
+}
+
+// Interface for FormErrors
+interface FormErrors {
+  [key: string]: string;
+}
+
+// Interface for RouteParams
+interface RouteParams {
+  agentData?: AgentData;
+  selectedRole?: string;
+}
+
+// Interface for AgentCreationScreen props
+interface AgentCreationScreenProps {
+  route: { params?: RouteParams };
 }
 
 // User state from Redux (inferred)
@@ -196,22 +254,24 @@ const AgentCreationScreen: React.FC<AgentCreationScreenProps> = ({ route }) => {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [instructionOptions, setInstructionOptions] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [errors, setErrors] = useState<FormErrors>({});
   const [fadeAnim] = useState<Animated.Value>(new Animated.Value(1));
   const [slideAnim] = useState<Animated.Value>(new Animated.Value(0));
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [instructionLoading, setInstructionLoading] = useState<boolean>(false);
   const [isUpdateMode, setIsUpdateMode] = useState<boolean>(false);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [selectedStore, setSelectedStore] = useState<string>(""); // default Bharat AI Store
+  const [selectedStore, setSelectedStore] = useState<string>("Bharat AI Store");
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
   
-    const token = useSelector((state: RootState) => state.userData?.accessToken);
-   const userId = useSelector((state: RootState) => state.userData?.userId);
-   const user = useSelector((state: RootState) => state.userData);
+  const token = useSelector((state: RootState) => state.userData?.accessToken);
+  const userId = useSelector((state: RootState) => state.userData?.userId);
+  const user = useSelector((state: RootState) => state.userData);
 
   const initialFormData: AgentFormData = {
     agentName: "",
     domain: "",
+    subDomain: "",
     customDomain: "",
     creatorName: "",
     gender: "",
@@ -251,75 +311,253 @@ const AgentCreationScreen: React.FC<AgentCreationScreenProps> = ({ route }) => {
     userExperience: 0,
     userExperienceSummary: "",
     agentId: "",
+    ageLimit: [],
+    shareContactDetails: "",
+    activeStatus: true,
   };
 
   const [formData, setFormData] = useState<AgentFormData>(initialFormData);
+  const params = useLocalSearchParams<{
+    selectedRole?: string;
+    agentData?: string;
+  }>();
 
-  const mapAgentDataToFormData = useCallback((agentData: AgentData): AgentFormData => ({
-    agentName: agentData.agentName || "",
-    domain: agentData.userRole || "",
-    customDomain: agentData.customDomain || "",
-    creatorName: agentData.name || "",
-    gender: agentData.gender || "",
-    description: agentData.description || "",
-    creatorExperience: agentData.creatorExperience || "",
-    strengths: agentData.strengths || "",
-    language: agentData.language || "",
-    voiceStatus: agentData.voiceStatus ?? true,
-    business_idea: agentData.business || "",
-    Domain_Sector: agentData.domain || "",
-    customDomain_Sector: agentData.customDomain_Sector || "",
-    SubDomain_Subsector: agentData.subDomain || "",
-    customSubDomain_Subsector: agentData.customSubDomain_Subsector || "",
-    GPT_Model: agentData.GPT_Model || "",
-    gptModel: agentData.usageModel || "",
-    targetUser: typeof agentData.targetUser === "string" ? agentData.targetUser : (agentData.targetUser || []).join(","),
-    isSolvingProblem: agentData.isSolvingProblem || "",
-    mainProblemSolved: agentData.mainProblemSolved || "",
-    uniqueSolution: agentData.uniqueSolution || "",
-    business: agentData.business || "",
-    targetCustomers: typeof agentData.targetUser === "string"
-      ? agentData.targetUser.split(",").map((item) => item.trim()).filter(Boolean)
-      : agentData.targetUser || [],
-    targetAgeLimit: typeof agentData.ageLimit === "string"
-      ? agentData.ageLimit.split(",").map((item) => item.trim()).filter(Boolean)
-      : agentData.ageLimit || [],
-    targetGender: typeof agentData.gender === "string" // Note: This reuses gender, but in context it's targetGender
-      ? agentData.gender.split(",").map((item) => item.trim()).filter(Boolean)
-      : agentData.gender || [],
-    conversationTone: agentData.converstionTone || "",
-    responseFormat: agentData.responseFormat || "",
-    usageModel: agentData.usageModel || "",
-    instructions: agentData.instructions || "",
-    conStarter1: agentData.conStarter1 || "",
-    conStarter2: agentData.conStarter2 || "",
-    conStarter3: agentData.conStarter3 || "",
-    conStarter4: agentData.conStarter4 || "",
-    contactDetails: agentData.contactDetails || "",
-    userRole: agentData.userRole || "",
-    customUserRole: "",
-    rateThisPlatform: agentData.rateThisPlatform || 0,
-    shareYourFeedback: agentData.shareYourFeedback || "",
-    userExperience: agentData.userExperience || 0,
-    userExperienceSummary: agentData.userExperienceSummary || "",
-    agentId: agentData.id || "",
-  }), []);
+  const mapAgentDataToFormData = useCallback((agentData: AgentData): AgentFormData => {
+    const rawTargetUser = agentData.targetUser || [];
+    const targetUserArray = typeof rawTargetUser === "string"
+      ? rawTargetUser.split(",").map((item) => item.trim()).filter(Boolean)
+      : Array.isArray(rawTargetUser) ? rawTargetUser : [];
 
-  useFocusEffect(
-    useCallback(() => {
-      if (route?.params?.agentData) {
-        console.log("Editing agent data:", route.params.agentData);
+    const rawAgeLimit = agentData.ageLimit || [];
+    const targetAgeLimitArray = typeof rawAgeLimit === "string"
+      ? rawAgeLimit.split(",").map((item) => item.trim()).filter(Boolean)
+      : Array.isArray(rawAgeLimit) ? rawAgeLimit : [];
+
+    const rawTargetGender = agentData.targetGender || agentData.gender || [];
+    const targetGenderArray = typeof rawTargetGender === "string"
+      ? rawTargetGender.split(",").map((item) => item.trim()).filter(Boolean)
+      : Array.isArray(rawTargetGender) ? rawTargetGender : [];
+
+    return {
+      agentName: agentData.agentName || "",
+      domain: agentData.userRole || "",
+      subDomain: agentData.subDomain || "",
+      customDomain: agentData.customDomain || "",
+      creatorName: agentData.name || "",
+      gender: agentData.gender || "",
+      description: agentData.description || "",
+      creatorExperience: agentData.creatorExperience || "",
+      strengths: agentData.strengths || "",
+      language: agentData.language || "",
+      voiceStatus: agentData.voiceStatus ?? true,
+      business_idea: agentData.business || "",
+      Domain_Sector: agentData.domain || "",
+      customDomain_Sector: agentData.customDomain_Sector || "",
+      SubDomain_Subsector: agentData.subDomain || "",
+      customSubDomain_Subsector: agentData.customSubDomain_Subsector || "",
+      GPT_Model: agentData.GPT_Model || "",
+      gptModel: agentData.usageModel || "",
+      targetUser: targetUserArray.join(","),
+      isSolvingProblem: agentData.isSolvingProblem || "",
+      mainProblemSolved: agentData.mainProblemSolved || "",
+      uniqueSolution: agentData.uniqueSolution || "",
+      business: agentData.business || "",
+      targetCustomers: targetUserArray,
+      targetAgeLimit: targetAgeLimitArray,
+      targetGender: targetGenderArray,
+      conversationTone: agentData.converstionTone || "",
+      responseFormat: agentData.responseFormat || "",
+      usageModel: agentData.usageModel || "",
+      instructions: agentData.instructions || "",
+      conStarter1: agentData.conStarter1 || "",
+      conStarter2: agentData.conStarter2 || "",
+      conStarter3: agentData.conStarter3 || "",
+      conStarter4: agentData.conStarter4 || "",
+      contactDetails: agentData.contactDetails || "",
+      userRole: agentData.userRole || "",
+      customUserRole: agentData.customUserRole || "",
+      rateThisPlatform: agentData.rateThisPlatform || 0,
+      shareYourFeedback: agentData.shareYourFeedback || "",
+      userExperience: agentData.userExperience || 0,
+      userExperienceSummary: agentData.userExperienceSummary || "",
+      agentId: agentData.id || "",
+      ageLimit: targetAgeLimitArray,
+      shareContactDetails: "",
+      activeStatus: true,
+    };
+  }, []);
+
+  // Validation helpers
+  const validateRequired = (value: any, fieldLabel: string): string => {
+    return (Array.isArray(value) ? value.length === 0 : !value || value.trim() === '') ? `Please enter ${fieldLabel.toLowerCase()}` : '';
+  };
+
+  const validateLength = (value: string, max: number, fieldLabel: string): string => {
+    return value.length > max ? `Please keep ${fieldLabel.toLowerCase()} under ${max} characters` : '';
+  };
+
+  const validateField = (field: keyof AgentFormData, value: any, fieldLabel?: string): string => {
+    const fieldLabels: Record<string, string> = {
+      agentName: 'your AI agent name',
+      creatorName: 'your name',
+      description: 'a description of problems you solve',
+      language: 'your preferred language',
+      business_idea: 'your business or idea details',
+      Domain_Sector: 'your domain/sector',
+      SubDomain_Subsector: 'your sub-domain/subsector',
+      gptModel: 'a GPT model',
+      responseFormat: 'a response format',
+      isSolvingProblem: 'whether you are solving a problem',
+      conversationTone: 'a conversation tone',
+      targetCustomers: 'your target customers',
+      targetAgeLimit: 'target age groups',
+      targetGender: 'target gender preferences',
+      conStarter1: 'the first conversation starter',
+      conStarter2: 'the second conversation starter',
+      conStarter3: 'the third conversation starter',
+      conStarter4: 'the fourth conversation starter',
+      mainProblemSolved: 'the main problem you solve'
+    };
+    
+    const label = fieldLabels[field] || fieldLabel || field;
+    
+    switch (field) {
+      case 'agentName':
+      case 'creatorName':
+      case 'description':
+      case 'language':
+      case 'business_idea':
+      case 'Domain_Sector':
+      case 'SubDomain_Subsector':
+      case 'gptModel':
+      case 'responseFormat':
+      case 'isSolvingProblem':
+      case 'conversationTone':
+      case 'targetCustomers':
+      case 'targetAgeLimit':
+      case 'targetGender':
+        return validateRequired(value, label as string);
+      case 'mainProblemSolved':
+        return validateLength(value, 100, label as string) || validateRequired(value, label as string);
+      case 'business_idea':
+        return validateLength(value, 300, label as string) || validateRequired(value, label as string);
+      case 'uniqueSolution':
+        return validateLength(value, 100, label as string);
+      case 'conStarter1':
+      case 'conStarter2':
+      case 'conStarter3':
+      case 'conStarter4':
+        return validateRequired(value, label as string);
+      default:
+        return '';
+    }
+  };
+
+  // Validate specific step
+  const validateStep = (currentStep: number): boolean => {
+    const stepFields: { [step: number]: (keyof AgentFormData)[] } = {
+      1: ['agentName', 'creatorName', 'userRole', 'description', 'language'],
+      2: ['business_idea', 'Domain_Sector', 'SubDomain_Subsector', 'gptModel', 'responseFormat', 'isSolvingProblem'],
+      3: ['targetCustomers', 'targetAgeLimit', 'targetGender', 'conversationTone'],
+      4: ['conStarter1', 'conStarter2', 'conStarter3', 'conStarter4'], // Optional or required
+    };
+
+    const fields = stepFields[currentStep] || [];
+    const newErrors: FormErrors = {};
+    let hasErrors = false;
+
+    fields.forEach(field => {
+      const error = validateField(field, formData[field]);
+      if (error) {
+        newErrors[field] = error;
+        hasErrors = true;
+      }
+    });
+
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    if (hasErrors) {
+      Alert.alert('Missing Information', 'Please fill in all the required fields to continue.');
+    }
+    return !hasErrors;
+  };
+
+  const nextStep = () => {
+    if (validateStep(step)) {
+      setStep(prev => prev + 1);
+      setErrors({}); // Clear errors on successful next
+    }
+  };
+
+  const prevStep = () => {
+    setStep(prev => prev - 1);
+  };
+
+  // Handle form change (clear error on input)
+  const handleChange = (field: keyof AgentFormData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => ({ ...prev, [field]: '' })); // Clear specific error
+  };
+
+  const renderStep = () => {
+    switch (step) {
+      case 1:
+        return <Step1 formData={formData} handleChange={handleChange} errors={errors} />;
+      case 2:
+        return <Step2 formData={formData} handleChange={handleChange} />;
+      case 3:
+        return (
+          <Step3
+            formData={formData}
+            handleChange={handleChange}
+            errors={errors}
+            instructionOptions={instructionOptions}
+            fetchInstructions={fetchInstructions}
+            isLoading={instructionLoading}
+          />
+        );
+      case 4:
+        return <Step4 formData={formData} handleChange={handleChange} errors={errors} />;
+      default:
+        return null;
+    }
+  };
+// Updated useEffect for Expo Router params
+  // Handles both selectedRole (creation) and agentData (update; assumes serialized string)
+  useEffect(() => {
+    let parsedAgentData: AgentData | undefined;
+
+    // Parse agentData if present (serialized from router.push)
+    if (params.agentData) {
+      try {
+        parsedAgentData = typeof params.agentData === "string" 
+          ? JSON.parse(params.agentData) 
+          : params.agentData;
+        console.log("Editing agent data:", parsedAgentData);
         setIsUpdateMode(true);
-        setFormData(mapAgentDataToFormData(route.params.agentData));
-      } else if (route?.params?.selectedRole) { 
-        setSelectedRole(route.params.selectedRole);
-      } else {
+        if (parsedAgentData) {
+          setFormData(mapAgentDataToFormData(parsedAgentData));
+        }
+      } catch (error) {
+        console.error("Failed to parse agentData:", error);
+        Alert.alert("Error", "Invalid agent data provided for editing.");
         setIsUpdateMode(false);
         setFormData(initialFormData);
       }
-      setIsDataLoaded(true);
-    }, [route?.params?.agentData, mapAgentDataToFormData])
-  );
+    } 
+    // Handle creation mode (selectedRole present)
+    else if (params.selectedRole) { 
+      setSelectedRole(params.selectedRole as string);
+      setIsUpdateMode(false);
+      setFormData(initialFormData);
+    } 
+    // Default mode
+    else {
+      setIsUpdateMode(false);
+      setFormData(initialFormData);
+      setSelectedRole(null);
+    }
+    setIsDataLoaded(true);
+  }, [params.agentData, params.selectedRole, mapAgentDataToFormData]);
 
   useEffect(() => {
     getProfile();
@@ -338,7 +576,7 @@ const AgentCreationScreen: React.FC<AgentCreationScreenProps> = ({ route }) => {
   }, [userId]);
 
   // Handle form field changes with type safety
-  const handleChange = useCallback((field: keyof AgentFormData, value: any): void => {
+  const handleChangeWithValidation = useCallback((field: keyof AgentFormData, value: any): void => {
     let typedValue = value;
     if (field === "rateThisPlatform" || field === "userExperience") {
       typedValue = value ? parseInt(value, 10) || 0 : 0;
@@ -356,10 +594,11 @@ const AgentCreationScreen: React.FC<AgentCreationScreenProps> = ({ route }) => {
     setInstructionLoading(true);
     try {
       const response: AxiosResponse = await axios({
-        url: `${BASE_URL}ai-service/agent/classifyInstruct?description=${formData.description}`,
+        url: `${BASE_URL}ai-service/agent/classifyInstruct?description=${encodeURIComponent(formData.description)}&agentId=${formData.agentId || ""}`,
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        // data:{ description:formData.description, agentId: formData.agentId || undefined },
         method: "POST",
       });
       console.log("Instruction fetch response", response.data);
@@ -429,93 +668,7 @@ const AgentCreationScreen: React.FC<AgentCreationScreenProps> = ({ route }) => {
     }
   }, [formData, userId, selectedStore, token]);
 
-  // Validate current step's required fields
-  const validateStep = useCallback((): boolean => {
-    switch (step) {
-      case 1:
-        if (
-          !formData.agentName ||
-          !formData.creatorName ||
-          !formData.userRole ||
-          !formData.description ||
-          !formData.language
-        ) {
-          setError("Please fill all required fields in Profile.");
-          Alert.alert("Please fill all required fields in Profile.");
-          return false;
-        }
-        break;
-      case 2:
-        if (
-          !formData.business_idea ||
-          !formData.Domain_Sector ||
-          (formData.Domain_Sector === "Other" &&
-            !formData.customDomain_Sector) ||
-          !formData.SubDomain_Subsector ||
-          (formData.SubDomain_Subsector === "Other" &&
-            !formData.customSubDomain_Subsector) ||
-          !formData.gptModel ||
-          !formData.isSolvingProblem
-        ) {
-          setError(
-            "Please fill the following before Continue: Business/Idea, Domain/Sector, Sub-Domain/Subsector, GPT Model, Are you solving a problem?"
-          );
-          Alert.alert(
-            "Please fill the following before Continue: Business/Idea, Domain/Sector, Sub-Domain/Subsector, GPT Model, Are you solving a problem?"
-          );
-          return false;
-        }
-        if (
-          formData.isSolvingProblem === "yes" &&
-          !formData.mainProblemSolved
-        ) {
-          setError(
-            "Please fill the main problem solved field as you indicated you are solving a problem."
-          );
-          Alert.alert(
-            "Please fill the main problem solved field as you indicated you are solving a problem."
-          );
-          return false;
-        }
-        break;
-      case 3:
-        if (
-          !formData.instructions ||
-          !formData.conversationTone ||
-          !formData.responseFormat ||
-          !formData.targetGender.length ||
-          !formData.targetAgeLimit.length ||
-          !formData.targetCustomers.length
-        ) {
-          setError(
-            "Please fill the following before Continue: Target Audience Gender, Target Age Limit(s)."
-          );
-          Alert.alert(
-            "Please fill the following before Continue: Target Audience Gender, Target Age Limit(s)."
-          );
-          return false;
-        }
-        break;
-      case 4:
-        const rating: number = parseInt(formData.rateThisPlatform as any, 10); // Cast due to string/number mix
-        const ux: number = parseInt(formData.userExperience as any, 10);
-        if (
-          isNaN(rating) ||
-          rating < 0 ||
-          rating > 5 ||
-          isNaN(ux) ||
-          ux < 0 ||
-          ux > 5
-        ) {
-          setError("Please provide valid ratings (0-5) before proceeding.");
-          Alert.alert("Please provide valid ratings (0-5) before proceeding.");
-          return false;
-        }
-        break;
-    }
-    setError("");
-    return true;
-  }, [step, formData]);
+
 
   // Animate step transition
   const animateTransition = useCallback((direction: "next" | "prev"): void => {
@@ -552,14 +705,14 @@ const AgentCreationScreen: React.FC<AgentCreationScreenProps> = ({ route }) => {
   }, [step, fadeAnim, slideAnim]);
 
   const next = useCallback((): void => {
-    if (validateStep()) {
+    if (validateStep(step)) {
       if (step < 5) animateTransition("next");
     }
   }, [validateStep, step, animateTransition]);
 
   // Handle next step submission with API calls
-  const nextStep = useCallback(async (): Promise<void> => {
-    if (step === 1 && validateStep()) {
+  const nextStepWithAPI = useCallback(async (): Promise<void> => {
+    if (step === 1 && validateStep(step)) {
       const data: any = {
         userId:userId,
         headerTitle: selectedRole,
@@ -600,7 +753,7 @@ const AgentCreationScreen: React.FC<AgentCreationScreenProps> = ({ route }) => {
         setIsLoading(false);
       }
     }
-    if (step === 2 && validateStep()) {
+    if (step === 2 && validateStep(step)) {
       const data: any = {
         agentId: formData.agentId,
         business: formData.business_idea,
@@ -646,7 +799,7 @@ const AgentCreationScreen: React.FC<AgentCreationScreenProps> = ({ route }) => {
         setIsLoading(false);
       }
     }
-    if (step === 3 && validateStep()) {
+    if (step === 3 && validateStep(step)) {
       const data: any = {
         ageLimit: formData.targetAgeLimit.join(","),
         agentId: formData.agentId,
@@ -691,28 +844,28 @@ const AgentCreationScreen: React.FC<AgentCreationScreenProps> = ({ route }) => {
     }
   }, [step, validateStep, formData, user, selectedRole, token, next]);
 
-  const prevStep = useCallback((): void => {
+  const prevStepWithAnimation = useCallback((): void => {
     setError("");
     if (step > 1) animateTransition("prev");
   }, [step, animateTransition]);
 
   // Create a unified FormData interface for all steps
-  const createUnifiedFormData = (data: AgentFormData) => ({
+  const createUnifiedFormData = (data: AgentFormData): FormData => ({
     ...data,
-    subDomain: data.SubDomain_Subsector,
+    subDomain: data.subDomain || data.SubDomain_Subsector,
     ageLimit: data.targetAgeLimit,
-    targetUser: data.targetCustomers,
+    targetUser: data.targetCustomers.join(','),
   });
 
   // Create a wrapper handleChange function that maps field names
   const createHandleChangeWrapper = useCallback(() => {
-    return (field: string, value: any) => {
+    return (field: keyof FormData, value: any) => {
       // Map FormData field names to AgentFormData field names
-      const fieldMapping: Record<string, keyof AgentFormData> = {
+      const fieldMapping: Record<keyof FormData, keyof AgentFormData> = {
         subDomain: 'SubDomain_Subsector',
         ageLimit: 'targetAgeLimit',
         targetUser: 'targetCustomers',
-      };
+      } as Record<keyof FormData, keyof AgentFormData>;
       
       const mappedField = fieldMapping[field] || field as keyof AgentFormData;
       handleChange(mappedField, value);
@@ -720,33 +873,34 @@ const AgentCreationScreen: React.FC<AgentCreationScreenProps> = ({ route }) => {
   }, [handleChange]);
 
   // Render current step component
-  const renderStep = useCallback(() => {
+  const renderCurrentStep = useCallback(() => {
     const unifiedData = createUnifiedFormData(formData);
     const wrappedHandleChange = createHandleChangeWrapper();
     
     switch (step) {
       case 1:
-        return <Step1 formData={unifiedData} handleChange={wrappedHandleChange} />;
+        return <Step1 formData={unifiedData} handleChange={wrappedHandleChange} errors={errors} />;
       case 2:
-        return <Step2 formData={unifiedData} handleChange={wrappedHandleChange} />;
+        return <Step2 formData={unifiedData} handleChange={wrappedHandleChange} errors={errors} />;
       case 3:
         return (
           <Step3
             formData={unifiedData}
             handleChange={wrappedHandleChange}
+            errors={errors}
             instructionOptions={instructionOptions}
             fetchInstructions={fetchInstructions}
             isLoading={instructionLoading}
           />
         );
       case 4:
-        return <Step4 formData={unifiedData} handleChange={wrappedHandleChange} />;
+        return <Step4 formData={unifiedData} handleChange={wrappedHandleChange} errors={errors} />;
       case 5:
         return <Step5Preview formData={unifiedData} />;
       default:
         return null;
     }
-  }, [step, formData, createHandleChangeWrapper, instructionOptions, fetchInstructions, instructionLoading]);
+  }, [step, formData, errors, createHandleChangeWrapper, instructionOptions, fetchInstructions, instructionLoading]);
 
   // Render progress bar and steps
   const renderProgress = useCallback(() => {
@@ -824,41 +978,43 @@ const AgentCreationScreen: React.FC<AgentCreationScreenProps> = ({ route }) => {
 
   return (
     <LinearGradient colors={["#F8FAFC", "#F1F5F9"]} style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardContainer}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-      >
-        {renderProgress()}
-        <View style={styles.header}>
-          <Text style={styles.headerSubtitle}>
-            Step {step} of 4 • {Math.round((step / 4) * 100)}% Complete
-          </Text>
-        </View>
-        <Animated.View
-          style={[
-            styles.contentContainer,
-            { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
-          ]}
+      <View style={styles.mainContainer}>
+        <KeyboardAvoidingView
+          style={styles.keyboardContainer}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
         >
-          <View style={styles.stepCard}>
-            <ScrollView
-              style={styles.scrollView}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.scrollContent}
-              keyboardShouldPersistTaps="handled"
-            >
-              {error ? (
-                <View style={styles.errorCard}>
-                  <Text style={styles.errorIcon}>⚠️</Text>
-                  <Text style={styles.errorText}>{error}</Text>
-                </View>
-              ) : null}
-              {renderStep()}
-            </ScrollView>
+          {renderProgress()}
+          <View style={styles.header}>
+            <Text style={styles.headerSubtitle}>
+              Step {step} of 4 • {Math.round((step / 4) * 100)}% Complete
+            </Text>
           </View>
-        </Animated.View>
-
+          <Animated.View
+            style={[
+              styles.contentContainer,
+              { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
+            ]}
+          >
+            <View style={styles.stepCard}>
+              <ScrollView
+                style={styles.scrollView}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+              >
+                {error ? (
+                  <View style={styles.errorCard}>
+                    <Text style={styles.errorIcon}>⚠️</Text>
+                    <Text style={styles.errorText}>{error}</Text>
+                  </View>
+                ) : null}
+                {renderCurrentStep()}
+              </ScrollView>
+            </View>
+          </Animated.View>
+        </KeyboardAvoidingView>
+        
         <View style={styles.footer}>
           <View style={styles.buttonContainer}>
             {step > 1 && (
@@ -869,10 +1025,10 @@ const AgentCreationScreen: React.FC<AgentCreationScreenProps> = ({ route }) => {
               />
             )}
             <View style={{ flex: 1 }} />
-            {step < 5 ? (
+            {step < 4 ? (
               <CustomButton
                 title="Next →"
-                onPress={nextStep}
+                onPress={nextStepWithAPI}
                 variant="primary"
                 disabled={isLoading}
                 loading={isLoading}
@@ -887,8 +1043,9 @@ const AgentCreationScreen: React.FC<AgentCreationScreenProps> = ({ route }) => {
             )}
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </View>
 
+      {/* Modal unchanged */}
       <Modal
         visible={modalVisible}
         transparent
@@ -964,6 +1121,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 10,
+  },
+  mainContainer: {
+    flex: 1,
   },
   keyboardContainer: { flex: 1 },
   header: {
@@ -1043,6 +1203,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     paddingHorizontal: 24,
+    marginBottom: 80,
   },
   stepCard: {
     flex: 1,
@@ -1084,6 +1245,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: 24,
     paddingVertical: 16,
     backgroundColor: "#FFFFFF",
@@ -1186,6 +1351,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 20,
     gap: 12,
+  },
+  errorInput: {
+    borderColor: '#EF4444',
+  },
+  errorMessage: {
+    fontSize: 12,
+    color: '#EF4444',
+    marginTop: 4,
+    marginBottom: 8,
   },
 });
 

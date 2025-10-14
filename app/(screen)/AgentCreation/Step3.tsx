@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,9 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Modal,
 } from "react-native";
+import { Dropdown, MultiSelect } from "react-native-element-dropdown";
 
 // Interface for dropdown options
 interface DropdownOption {
@@ -55,9 +57,13 @@ interface Step3Props {
   instructionOptions: string;
   fetchInstructions: () => void;
   isLoading: boolean;
+  errors?: { [key: string]: string };
 }
 
-const Step3: React.FC<Step3Props> = ({ formData, handleChange, instructionOptions, fetchInstructions, isLoading }) => {
+const Step3: React.FC<Step3Props> = ({ formData, handleChange, instructionOptions, fetchInstructions, isLoading, errors = {} }) => {
+  const [showModal, setShowModal] = useState(false);
+  const [editableSuggestion, setEditableSuggestion] = useState('');
+
   // Conversation tone options
   const conversationToneOptions: DropdownOption[] = [
     { label: "Helpful, Professional", value: "Helpful, Professional" },
@@ -106,11 +112,6 @@ const Step3: React.FC<Step3Props> = ({ formData, handleChange, instructionOption
     { label: "Other", value: "Other" },
   ];
 
-  // Handle multi-select dropdown changes
-  const handleMultiSelect = (field: keyof FormData, items: string[]): void => {
-    handleChange(field, items);
-  };
-
   // Handle checkbox changes
   const handleCheckboxChange = (field: keyof FormData, value: string): void => {
     const currentValues: string[] = (formData[field] as string[]) || [];
@@ -131,46 +132,28 @@ const Step3: React.FC<Step3Props> = ({ formData, handleChange, instructionOption
     </TouchableOpacity>
   );
 
-  // Simple dropdown component
-  const SimpleDropdown: React.FC<{
-    data: DropdownOption[];
-    value: string | string[];
-    onSelect: (item: DropdownOption) => void;
-    placeholder: string;
-  }> = ({ data, value, onSelect, placeholder }) => {
-    const [isOpen, setIsOpen] = React.useState(false);
-    const displayValue = Array.isArray(value) ? value.join(', ') : value;
-    
-    return (
-      <View>
-        <TouchableOpacity
-          style={styles.dropdown}
-          onPress={() => setIsOpen(!isOpen)}
-        >
-          <Text style={displayValue ? styles.selectedTextStyle : styles.placeholderStyle}>
-            {displayValue || placeholder}
-          </Text>
-        </TouchableOpacity>
-        {isOpen && (
-          <View style={styles.dropdownContainer}>
-            <ScrollView style={{ maxHeight: 200 }}>
-              {data.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    onSelect(item);
-                    setIsOpen(false);
-                  }}
-                >
-                  <Text style={styles.itemTextStyle}>{item.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-      </View>
-    );
+  useEffect(() => {
+    if (instructionOptions && instructionOptions.trim()) {
+      setEditableSuggestion(instructionOptions);
+      setShowModal(true);
+    }
+  }, [instructionOptions]);
+
+  const handleRegenerate = () => {
+    fetchInstructions();
+  };
+
+  const handleAccept = () => {
+    handleChange("instructions", editableSuggestion);
+    setShowModal(false);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+  };
+
+  const handleInputBlur = (field: keyof FormData) => {
+    // Optional
   };
 
   return (
@@ -178,17 +161,23 @@ const Step3: React.FC<Step3Props> = ({ formData, handleChange, instructionOption
       <Text style={styles.title}>Step 3 - Audience & Configuration</Text>
 
       <Text style={styles.label}>Target Customers *</Text>
-      <SimpleDropdown
+      <MultiSelect
+        style={[styles.dropdown, errors.targetCustomers && styles.errorInput]}
+        placeholderStyle={[styles.placeholderStyle, errors.targetCustomers && styles.errorText]}
+        selectedTextStyle={[styles.selectedTextStyle, errors.targetCustomers && styles.errorText]}
         data={customerOptions}
-        value={formData.targetCustomers}
+        search
+        maxHeight={200}
+        labelField="label"
+        valueField="value"
         placeholder="Select target customers"
-        onSelect={(item: DropdownOption) => {
-          const currentValues: string[] = formData.targetCustomers || [];
-          if (!currentValues.includes(item.value)) {
-            handleMultiSelect("targetCustomers", [...currentValues, item.value]);
-          }
-        }}
+        searchPlaceholder="Search customers..."
+        value={formData.targetCustomers}
+        onChange={(items) => handleChange("targetCustomers", items)}
+        mode="modal"
+        onBlur={() => handleInputBlur("targetCustomers")}
       />
+      {errors.targetCustomers && <Text style={styles.errorMessage}>{errors.targetCustomers}</Text>}
       
       {/* Display selected customers */}
       <View style={styles.selectedItemsContainer}>
@@ -212,17 +201,21 @@ const Step3: React.FC<Step3Props> = ({ formData, handleChange, instructionOption
       </View>
 
       <Text style={styles.label}>Target Audience Age Limit *</Text>
-      <SimpleDropdown
+      <MultiSelect
+        style={[styles.dropdown, errors.targetAgeLimit && styles.errorInput]}
+        placeholderStyle={[styles.placeholderStyle, errors.targetAgeLimit && styles.errorText]}
+        selectedTextStyle={[styles.selectedTextStyle, errors.targetAgeLimit && styles.errorText]}
         data={ageOptions}
-        value={formData.targetAgeLimit}
+        maxHeight={200}
+        labelField="label"
+        valueField="value"
         placeholder="Select age ranges"
-        onSelect={(item: DropdownOption) => {
-          const currentValues: string[] = formData.targetAgeLimit || [];
-          if (!currentValues.includes(item.value)) {
-            handleMultiSelect("targetAgeLimit", [...currentValues, item.value]);
-          }
-        }}
+        value={formData.targetAgeLimit}
+        onChange={(items) => handleChange("targetAgeLimit", items)}
+        mode="modal"
+        onBlur={() => handleInputBlur("targetAgeLimit")}
       />
+      {errors.targetAgeLimit && <Text style={styles.errorMessage}>{errors.targetAgeLimit}</Text>}
       
       {/* Display selected age ranges */}
       <View style={styles.selectedItemsContainer}>
@@ -246,7 +239,7 @@ const Step3: React.FC<Step3Props> = ({ formData, handleChange, instructionOption
       </View>
 
       <Text style={styles.label}>Target Audience Gender *</Text>
-      <View style={styles.checkboxContainer}>
+      <View style={[styles.checkboxContainer, errors.targetGender && styles.errorContainer]}>
         <View style={styles.checkboxRow}>
           <SimpleCheckbox
             value={formData.targetGender?.includes("male") || false}
@@ -272,14 +265,24 @@ const Step3: React.FC<Step3Props> = ({ formData, handleChange, instructionOption
           <Text style={styles.checkboxLabel}>Other</Text>
         </View>
       </View>
+      {errors.targetGender && <Text style={styles.errorMessage}>{errors.targetGender}</Text>}
 
       <Text style={styles.label}>Conversation Tone *</Text>
-      <SimpleDropdown
+      <Dropdown
+        style={[styles.dropdown, errors.conversationTone && styles.errorInput]}
+        placeholderStyle={[styles.placeholderStyle, errors.conversationTone && styles.errorText]}
+        selectedTextStyle={[styles.selectedTextStyle, errors.conversationTone && styles.errorText]}
         data={conversationToneOptions}
-        value={formData.conversationTone}
+        maxHeight={200}
+        labelField="label"
+        valueField="value"
         placeholder="Select conversation tone"
-        onSelect={(item: DropdownOption) => handleChange("conversationTone", item.value)}
+        value={formData.conversationTone}
+        onChange={(item) => handleChange("conversationTone", item.value)}
+        mode="modal"
+        onBlur={() => handleInputBlur("conversationTone")}
       />
+      {errors.conversationTone && <Text style={styles.errorMessage}>{errors.conversationTone}</Text>}
 
       <Text style={styles.label}>Instructions</Text>
       <TextInput
@@ -305,30 +308,52 @@ const Step3: React.FC<Step3Props> = ({ formData, handleChange, instructionOption
         )}
       </TouchableOpacity>
 
-      {instructionOptions ? (
-        <View style={styles.suggestionsContainer}>
-          <Text style={styles.suggestionsTitle}>Suggestion:</Text>
-          <TouchableOpacity
-            style={styles.suggestionChip}
-            onPress={() => {
-              handleChange("instructions", instructionOptions);
-              Alert.alert("Instructions have been updated in the Instructions field. Do you want to update it as well?");
-            }}
-            accessible={true}
-            accessibilityLabel="Instruction Suggestion"
-          >
-            <ScrollView>
-              <Text style={styles.suggestionText}>
-                {instructionOptions}
-              </Text>
-            </ScrollView>
-          </TouchableOpacity>
+      {/* Modal for Suggestions */}
+      <Modal
+        visible={showModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCloseModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={handleCloseModal}
+            >
+              <Text style={styles.closeButtonText}>×</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Instruction Suggestion</Text>
+            <TextInput
+              style={[styles.input, styles.modalInput]}
+              multiline
+              value={editableSuggestion}
+              onChangeText={setEditableSuggestion}
+              placeholder="Edit the suggestion here..."
+              textAlignVertical="top"
+              editable={true}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.regenerateButton}
+                onPress={handleRegenerate}
+                disabled={isLoading}
+              >
+                <Text style={styles.regenerateButtonText}>
+                  {isLoading ? "Regenerating..." : "Regenerate"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.acceptButton}
+                onPress={handleAccept}
+                disabled={isLoading}
+              >
+                <Text style={styles.acceptButtonText}>Accept</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      ) : (
-        <View style={styles.suggestionsContainer}>
-          <Text style={styles.noSuggestionsText}>No suggestions available</Text>
-        </View>
-      )}
+      </Modal>
     </ScrollView>
   );
 };
@@ -366,58 +391,6 @@ const styles = StyleSheet.create({
   selectedTextStyle: {
     fontSize: 16,
     color: "#333",
-  },
-  dropdownContainer: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    backgroundColor: "#fff",
-  },
-  itemTextStyle: {
-    fontSize: 16,
-    color: "#333",
-  },
-  suggestionsContainer: { 
-    marginTop: 20,
-    marginBottom: 12,
-  },
-  suggestionsTitle: { 
-    fontSize: 14, 
-    fontWeight: "600", 
-    marginBottom: 10, 
-    color: "#374151" 
-  },
-  suggestionChip: {
-    backgroundColor: "#F1F5F9",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-    minHeight: 150,
-    height: 250,
-  },
-  suggestionText: { 
-    fontSize: 14, 
-    color: "#374151",
-    fontWeight: "500" 
-  },
-  noSuggestionsText: {
-    fontSize: 14,
-    color: "#9CA3AF",
-    fontWeight: "500",
-  },
-  loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-    padding: 12,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: "#374151",
-    marginLeft: 8,
   },
   checkboxContainer: {
     marginBottom: 16,
@@ -497,10 +470,90 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
-  dropdownItem: {
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    width: '90%',
+    maxHeight: '90%',
+    position: 'relative',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1,
+  },
+  closeButtonText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#374151',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 15,
+    color: '#1F2937',
+    textAlign: 'center',
+  },
+  modalInput: {
+    height: 200,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  regenerateButton: {
+    flex: 1,
+    backgroundColor: '#E5E7EB',
     padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderRadius: 8,
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  regenerateButtonText: {
+    color: '#374151',
+    fontWeight: '500',
+    fontSize: 16,
+  },
+  acceptButton: {
+    flex: 1,
+    backgroundColor: '#6366F1',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  acceptButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  errorInput: {
+    borderColor: '#EF4444',
+  },
+  errorText: {
+    color: '#EF4444',
+  },
+  errorContainer: {
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    borderRadius: 8,
+    padding: 8,
+  },
+  errorMessage: {
+    fontSize: 12,
+    color: '#EF4444',
+    marginTop: 4,
+    marginBottom: 8,
   },
 });
 

@@ -58,9 +58,10 @@ interface FormData {
 interface Step4Props {
   formData: FormData;
   handleChange: (field: keyof FormData, value: any) => void;
+  errors?: { [key: string]: string };
 }
 
-const Step4: React.FC<Step4Props> = ({ formData, handleChange }) => {
+const Step4: React.FC<Step4Props> = ({ formData, handleChange, errors = {} }) => {
   const [showVoiceInfo, setShowVoiceInfo] = useState<boolean>(false);
   const user = useSelector<RootState, UserState>((state) => state.userData as UserState);
   const token = user.accessToken;
@@ -82,6 +83,10 @@ const Step4: React.FC<Step4Props> = ({ formData, handleChange }) => {
       .catch((error) => {
         console.log("Profile error", error);
       });
+  };
+
+  const handleInputBlur = (field: keyof FormData) => {
+    // Optional
   };
 
   return (
@@ -112,49 +117,56 @@ const Step4: React.FC<Step4Props> = ({ formData, handleChange }) => {
 
       <Text style={styles.sectionTitle}>Conversation Starter 1</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, errors.conStarter1 && styles.errorInput]}
         placeholder='e.g., "What service do you need help with today?"'
         placeholderTextColor="#94A3B8"
         value={formData.conStarter1}
         onChangeText={(v: string) => handleChange("conStarter1", v)}
+        onBlur={() => handleInputBlur("conStarter1")}
         accessible={true}
         accessibilityLabel="Conversation Starter 1"
       />
+      {errors.conStarter1 && <Text style={styles.errorMessage}>{errors.conStarter1}</Text>}
 
       <Text style={styles.sectionTitle}>Conversation Starter 2</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, errors.conStarter2 && styles.errorInput]}
         placeholder='e.g., "Share your case details..."'
         placeholderTextColor="#94A3B8"
         value={formData.conStarter2}
         onChangeText={(v: string) => handleChange("conStarter2", v)}
+        onBlur={() => handleInputBlur("conStarter2")}
         accessible={true}
         accessibilityLabel="Conversation Starter 2"
       />
+      {errors.conStarter2 && <Text style={styles.errorMessage}>{errors.conStarter2}</Text>}
 
       <Text style={styles.sectionTitle}>Conversation Starter 3</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, errors.conStarter3 && styles.errorInput]}
         placeholder='e.g., "Do you want a document template?"'
         placeholderTextColor="#94A3B8"
         value={formData.conStarter3}
         onChangeText={(v: string) => handleChange("conStarter3", v)}
+        onBlur={() => handleInputBlur("conStarter3")}
         accessible={true}
         accessibilityLabel="Conversation Starter 3"
       />
+      {errors.conStarter3 && <Text style={styles.errorMessage}>{errors.conStarter3}</Text>}
 
       <Text style={styles.sectionTitle}>Conversation Starter 4</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, errors.conStarter4 && styles.errorInput]}
         placeholder='e.g., "Prefer English/@cwfx/read?"'
         placeholderTextColor="#94A3B8"
         value={formData.conStarter4}
         onChangeText={(v: string) => handleChange("conStarter4", v)}
+        onBlur={() => handleInputBlur("conStarter4")}
         accessible={true}
         accessibilityLabel="Conversation Starter 4"
       />
+      {errors.conStarter4 && <Text style={styles.errorMessage}>{errors.conStarter4}</Text>}
 
-      {/* <Text style={styles.sectionTitle}>Active Status</Text> */}
       <View style={styles.switchContainer}>
         <Text style={styles.sectionTitle}>Active Status</Text>
         <Switch
@@ -194,13 +206,6 @@ const Step4: React.FC<Step4Props> = ({ formData, handleChange }) => {
           <Text>Disabled</Text>
         </View>
       </View>
-
-      {/* <View style={styles.switchContainer}>
-        <View></View>
-        <Text style={styles.voiceInfoText}>
-          It may launch soon and price is applicable.
-        </Text>
-      </View> */}
 
       {/* Voice Info Modal */}
       <Modal
@@ -324,6 +329,15 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: "white",
     fontWeight: "bold",
+  },
+  errorInput: {
+    borderColor: '#EF4444',
+  },
+  errorMessage: {
+    fontSize: 12,
+    color: '#EF4444',
+    marginTop: 4,
+    marginBottom: 8,
   },
 });
 

@@ -24,7 +24,7 @@ import axios from "axios";
 import Markdown from "react-native-markdown-display";
 import ChatInput from "./ChatInput";
 import { useSelector } from "react-redux";
-import { RootState } from "../Redux/types";
+import { RootState } from "../../Redux/types";
 import { useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 // import { useSelector } from "react-redux";
@@ -444,7 +444,7 @@ const GenOxyChatScreen: React.FC<Props> = () => {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 22}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 50}
     >
       <StatusBar barStyle="dark-content" backgroundColor="#f4f4f5" />
 
@@ -618,12 +618,12 @@ const styles = StyleSheet.create({
   inputWrapper: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: "#ffffff",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    // backgroundColor: "#ffffff",
+    // elevation: 2,
+    // shadowColor: "#000",
+    // shadowOffset: { width: 0, height: -1 },
+    // shadowOpacity: 0.1,
+    // shadowRadius: 2,
   },
   inputContainer: {
     paddingVertical: 8,

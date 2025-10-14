@@ -104,7 +104,7 @@ export default function TabLayout() {
         headerLeft: () => {
           return (<View style={{ width: 40,marginLeft:16,marginRight:16,backgroundColor : "#ffff",justifyContent:'center',alignItems:'center',borderRadius:100,height:40 }}>
                <Image 
-              source={require('../../../assets/images/ElephantHead.png')}
+              source={require('../../../assets/images/bharat-Eicon.png')}
               style={{ width: 32, height: 32, borderRadius: 8, }}
               resizeMode="contain"
               />

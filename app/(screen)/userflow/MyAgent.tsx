@@ -355,7 +355,11 @@ const AllAgentCreations: React.FC = () => {
             </View>
             <TouchableOpacity
               style={styles.updatebtn}
-              onPress={() => navigation.navigate('Agent Creation', { agentData: assistant })}>
+              onPress={() =>
+              router.push({
+                  pathname: '/(screen)/AgentCreation/agentCreation',
+                  params: { agentData: JSON.stringify(assistant) }, // Serialize if object
+                })}>
               <Text style={styles.updateText}>
                 📝 {assistant.assistantId ? 'Update' : 'Continue'}
               </Text>
@@ -549,7 +553,7 @@ const AllAgentCreations: React.FC = () => {
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.createBtn}
-        onPress={() => router.push('/(screen)/AgentCreation/agentCreation')}>
+        onPress={() => router.push('/(screen)/AgentCreation/AIRole')}>
         <Text style={{ color: 'white' }}>Create agent</Text>
       </TouchableOpacity>
       {renderSearchBar()}

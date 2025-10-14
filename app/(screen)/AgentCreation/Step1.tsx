@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, StyleSheet, Switch, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TextInput, StyleSheet, Switch, TouchableOpacity, ScrollView, Dimensions } from "react-native";
+import { Dropdown } from "react-native-element-dropdown";
 import axios, { AxiosResponse } from "axios";
 import BASE_URL from "../../../config";
 import { useSelector } from "react-redux";
 import { RootState } from "../../Redux/types";
+
+const { height } = Dimensions.get("window");
 
 // Interface for UserType
 interface UserType {
@@ -56,9 +59,10 @@ interface FormData {
 interface Step1Props {
   formData: FormData;
   handleChange: (field: keyof FormData, value: any) => void;
+  errors?: { [key: string]: string };
 }
 
-const Step1: React.FC<Step1Props> = ({ formData, handleChange }) => {
+const Step1: React.FC<Step1Props> = ({ formData, handleChange, errors = {} }) => {
   const [userTypes, setUserTypes] = useState<UserType[]>([
     { label: "Advocate", value: "Advocate" },
     { label: "Chartered Accountant (CA)", value: "CA" },
@@ -91,48 +95,6 @@ const Step1: React.FC<Step1Props> = ({ formData, handleChange }) => {
   const user = useSelector<RootState, UserState>((state) => state.userData as UserState);
   const userId = user?.userId;
 
-  // Simple dropdown component
-  const SimpleDropdown: React.FC<{
-    data: UserType[];
-    value: string;
-    onSelect: (item: UserType) => void;
-    placeholder: string;
-  }> = ({ data, value, onSelect, placeholder }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const selectedItem = data.find(item => item.value === value);
-    
-    return (
-      <View>
-        <TouchableOpacity
-          style={styles.dropdown}
-          onPress={() => setIsOpen(!isOpen)}
-        >
-          <Text style={selectedItem ? styles.selectedTextStyle : styles.placeholderStyle}>
-            {selectedItem ? selectedItem.label : placeholder}
-          </Text>
-        </TouchableOpacity>
-        {isOpen && (
-          <View style={styles.dropdownContainer}>
-            <ScrollView style={{ maxHeight: 200 }}>
-              {data.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    onSelect(item);
-                    setIsOpen(false);
-                  }}
-                >
-                  <Text style={styles.itemTextStyle}>{item.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-      </View>
-    );
-  };
-
   const languages: UserType[] = [
     { label: "English", value: "English" },
     { label: "తెలుగు", value: "తెలుగు" },
@@ -152,7 +114,7 @@ const Step1: React.FC<Step1Props> = ({ formData, handleChange }) => {
         { label: formData.userRole, value: formData.userRole },
       ]);
     }
-  }, [formData.userRole]); // Added dependency for formData.userRole to handle updates
+  }, [formData.userRole]);
 
   const getProfile = (): void => {
     axios
@@ -183,39 +145,58 @@ const Step1: React.FC<Step1Props> = ({ formData, handleChange }) => {
     handleChange("language", item.value);
   };
 
+  const handleInputBlur = (field: keyof FormData) => {
+    // Optional: Additional blur logic if needed
+  };
+
   return (
     <View style={styles.stepContainer}>
       <Text style={styles.title}>Agent Creator Profile</Text>
 
       <Text style={styles.label}>AI Agent Name *</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, errors.agentName && styles.errorInput]}
         placeholder="Enter agent name"
         placeholderTextColor="#94A3B8"
         value={formData.agentName}
         onChangeText={(v: string) => handleChange("agentName", v)}
+        onBlur={() => handleInputBlur("agentName")}
         accessible={true}
         accessibilityLabel="Agent Name"
       />
+      {errors.agentName && <Text style={styles.errorMessage}>{errors.agentName}</Text>}
 
       <Text style={styles.label}>Creator Name *</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, errors.creatorName && styles.errorInput]}
         placeholder="Enter Creator Name"
         placeholderTextColor="#94A3B8"
         value={formData.creatorName}
         onChangeText={(v: string) => handleChange("creatorName", v)}
+        onBlur={() => handleInputBlur("creatorName")}
         accessible={true}
         accessibilityLabel="Creator Name"
       />
+      {errors.creatorName && <Text style={styles.errorMessage}>{errors.creatorName}</Text>}
 
       <Text style={styles.label}>Professional Identity of the Creator *</Text>
-      <SimpleDropdown
+      <Dropdown
+        style={[styles.dropdown, errors.userRole && styles.errorInput]}
+        containerStyle={styles.containerStyle}
+        placeholderStyle={[styles.placeholderStyle, errors.userRole && styles.errorText]}
+        selectedTextStyle={[styles.selectedTextStyle, errors.userRole && styles.errorText]}
         data={userTypes}
-        value={formData.userRole}
+        search
+        maxHeight={200}
+        labelField="label"
+        valueField="value"
         placeholder="Select a role"
-        onSelect={handleDomainChange}
+        searchPlaceholder="Search role..."
+        value={formData.userRole}
+        onChange={handleDomainChange}
+        onBlur={() => handleInputBlur("userRole")}
       />
+      {errors.userRole && <Text style={styles.errorMessage}>{errors.userRole}</Text>}
       {formData.userRole === "Other" && (
         <>
           <TextInput
@@ -244,15 +225,17 @@ const Step1: React.FC<Step1Props> = ({ formData, handleChange }) => {
 
       <Text style={styles.label}>Problems Solved in the Past (Description) *</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, errors.description && styles.errorInput]}
         placeholder="Description"
         placeholderTextColor="#94A3B8"
         value={formData.description}
         onChangeText={(v: string) => handleChange("description", v)}
+        onBlur={() => handleInputBlur("description")}
         accessible={true}
         accessibilityLabel="Description"
         multiline={true}
       />
+      {errors.description && <Text style={styles.errorMessage}>{errors.description}</Text>}
 
       <Text style={styles.label}>Your Strengths in the Field (optional)</Text>
       <TextInput
@@ -267,12 +250,22 @@ const Step1: React.FC<Step1Props> = ({ formData, handleChange }) => {
       />
 
       <Text style={styles.label}>Preferred Language</Text>
-      <SimpleDropdown
+      <Dropdown
+        style={[styles.dropdown, errors.language && styles.errorInput]}
+        containerStyle={styles.dropdownContainer}
+        placeholderStyle={[styles.placeholderStyle, errors.language && styles.errorText]}
+        selectedTextStyle={[styles.selectedTextStyle, errors.language && styles.errorText]}
         data={languages}
-        value={formData.language}
+        maxHeight={200}
+        labelField="label"
+        valueField="value"
         placeholder="Select a language"
-        onSelect={handleLanguage}
+        value={formData.language}
+        onChange={handleLanguage}
+        mode="modal"
+        onBlur={() => handleInputBlur("language")}
       />
+      {errors.language && <Text style={styles.errorMessage}>{errors.language}</Text>}
     </View>
   );
 };
@@ -311,7 +304,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
     backgroundColor: "#fff",
-    height: 50, // Consistent with input height
+    height: 50,
   },
   placeholderStyle: {
     fontSize: 16,
@@ -319,13 +312,17 @@ const styles = StyleSheet.create({
   },
   selectedTextStyle: {
     fontSize: 16,
-    color: "#333",
+    color: "#252222ff",
   },
   dropdownContainer: {
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
-    backgroundColor: "#fff",
+  },
+  containerStyle: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
   },
   itemTextStyle: {
     fontSize: 16,
@@ -335,7 +332,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginTop: 8,
-    // marginBottom: 12,
   },
   switchLabel: {
     fontSize: 14,
@@ -347,6 +343,18 @@ const styles = StyleSheet.create({
     padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+  },
+  errorInput: {
+    borderColor: '#EF4444',
+  },
+  errorText: {
+    color: '#EF4444',
+  },
+  errorMessage: {
+    fontSize: 12,
+    color: '#EF4444',
+    marginTop: 4,
+    marginBottom: 8,
   },
 });
 
