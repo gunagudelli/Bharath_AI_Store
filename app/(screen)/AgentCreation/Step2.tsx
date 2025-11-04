@@ -97,7 +97,7 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange, errors = {} }) =>
   const gptModles: DropdownItem[] = [{ label: "GPT-4o", value: "gpt-4o" }];
 
   const handleDescriptionChange = (text: string): void => {
-    if (text.length <= 300) {
+    if (text.length <= 100) {
       handleChange("business_idea", text);
       setDescriptionLength(text.length);
     }
@@ -155,7 +155,7 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange, errors = {} }) =>
     <View style={styles.stepContainer}>
       <Text style={styles.title}>Business Context & GPT Model</Text>
 
-      <Text style={styles.label}>Business/Idea *</Text>
+      <Text style={styles.label}>Business/Idea * (Max 100 characters)</Text>
       <TextInput
         style={[styles.input, { height: 100, textAlignVertical: "top" }, errors.business_idea && styles.errorInput]}
         placeholder="Firm/Brand/Practice"
@@ -163,14 +163,14 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange, errors = {} }) =>
         value={formData.business_idea}
         onChangeText={handleDescriptionChange}
         multiline
-        maxLength={300}
+        maxLength={100}
         accessible={true}
         accessibilityLabel="business_idea"
       />
       {errors.business_idea && <Text style={styles.errorMessage}>{errors.business_idea}</Text>}
       <View style={styles.charCounterContainer}>
-        <Text style={styles.charCounter}>{descriptionLength}/300</Text>
-        {descriptionLength >= 300 && (
+        <Text style={styles.charCounter}>{descriptionLength}/100</Text>
+        {descriptionLength >= 100 && (
           <Text style={styles.charLimitWarning}>
             Maximum characters reached
           </Text>
@@ -192,15 +192,19 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange, errors = {} }) =>
       />
       {errors.Domain_Sector && <Text style={styles.errorMessage}>{errors.Domain_Sector}</Text>}
       {formData.Domain_Sector === "Other" && (
-        <TextInput
-          style={styles.input}
-          placeholder="Enter custom dector/Domain"
-          placeholderTextColor="#94A3B8"
-          value={formData.customDomain_Sector || ""}
-          onChangeText={(v: string) => handleChange("customDomain_Sector", v)}
-          accessible={true}
-          accessibilityLabel="customDomain_Sector"
-        />
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter custom sector/Domain"
+            placeholderTextColor="#94A3B8"
+            value={formData.customDomain_Sector || ""}
+            onChangeText={(v: string) => handleChange("customDomain_Sector", v)}
+            maxLength={60}
+            accessible={true}
+            accessibilityLabel="customDomain_Sector"
+          />
+          <Text style={styles.charCounter}>{(formData.customDomain_Sector || '').length}/60</Text>
+        </>
       )}
 
       <Text style={styles.label}>Sub-Domain/Subsector *</Text>
@@ -218,15 +222,19 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange, errors = {} }) =>
       />
       {errors.SubDomain_Subsector && <Text style={styles.errorMessage}>{errors.SubDomain_Subsector}</Text>}
       {formData.SubDomain_Subsector === "Other" && (
-        <TextInput
-          style={styles.input}
-          placeholder="Enter custom sub-Sector/sub-Domain"
-          placeholderTextColor="#94A3B8"
-          value={formData.customSubDomain_Subsector || ""}
-          onChangeText={(v: string) => handleChange("customSubDomain_Subsector", v)}
-          accessible={true}
-          accessibilityLabel="customSubDomain_Subsector"
-        />
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter custom sub-Sector/sub-Domain"
+            placeholderTextColor="#94A3B8"
+            value={formData.customSubDomain_Subsector || ""}
+            onChangeText={(v: string) => handleChange("customSubDomain_Subsector", v)}
+            maxLength={60}
+            accessible={true}
+            accessibilityLabel="customSubDomain_Subsector"
+          />
+          <Text style={styles.charCounter}>{(formData.customSubDomain_Subsector || '').length}/60</Text>
+        </>
       )}
 
       <Text style={styles.label}>GPT Model *</Text>
@@ -292,7 +300,7 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange, errors = {} }) =>
 
       {formData.isSolvingProblem === "yes" ? (
         <>
-          <Text style={styles.label}>Main Problem to Solve * (max 100 chars)</Text>
+          <Text style={styles.label}>Main Problem to Solve * (max 250 chars)</Text>
           <TextInput
             style={[styles.input, errors.mainProblemSolved && styles.errorInput]}
             placeholder="e.g.,Early Stage Startups struggle to choose the right structure and miss deadlines."
@@ -301,14 +309,15 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange, errors = {} }) =>
             onChangeText={(v: string) => handleChange("mainProblemSolved", v)}
             accessible={true}
             multiline={true}
-            maxLength={100}
+            maxLength={250}
             accessibilityLabel="Main Problem"
           />
+          <Text style={styles.charCounter}>{(formData.mainProblemSolved || '').length}/250</Text>
           {errors.mainProblemSolved && <Text style={styles.errorMessage}>{errors.mainProblemSolved}</Text>}
         </>
       ) : null}
 
-      <Text style={styles.label}>Unique Solution Method (max 100 chars)</Text>
+      <Text style={styles.label}>Unique Solution Method (max 250 chars)</Text>
       <TextInput
         style={styles.input}
         placeholder="e.g.,Fast Triage + templates + complaince checklist with remainders."
@@ -317,9 +326,10 @@ const Step2: React.FC<Step2Props> = ({ formData, handleChange, errors = {} }) =>
         onChangeText={(v: string) => handleChange("uniqueSolution", v)}
         accessible={true}
         multiline={true}
-        maxLength={100}
+        maxLength={250}
         accessibilityLabel="Unique Solution"
       />
+      <Text style={styles.charCounter}>{(formData.uniqueSolution || '').length}/250</Text>
     </View>
   );
 };

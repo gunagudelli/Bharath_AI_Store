@@ -6,7 +6,9 @@ import { RootState } from '../Redux/types'; // Adjust path to types
 
 export default function AuthLayout() {
   const userData = useSelector((state: RootState) => state.userData);
+  const onboardingState = useSelector((state: RootState) => state.onboarding);
   const isAuthenticated = !!userData?.accessToken;
+  const isOnboardingCompleted = onboardingState?.isCompleted;
 
   if (isAuthenticated) {
     console.log('Auto-login: Redirecting to tabs');
@@ -19,8 +21,9 @@ export default function AuthLayout() {
         headerShown: false,
         contentStyle: { backgroundColor: '#E3F2FD' }, // Light blue from mockup
       }}
-      initialRouteName="welcome" // Start at welcome if not authenticated
+      initialRouteName={isOnboardingCompleted ? "welcome" : "onboarding"} // Show onboarding only if not completed
     >
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="welcome" />
       <Stack.Screen name="login" />
       <Stack.Screen name="register" />

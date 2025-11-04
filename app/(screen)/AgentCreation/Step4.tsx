@@ -115,6 +115,25 @@ const Step4: React.FC<Step4Props> = ({ formData, handleChange, errors = {} }) =>
         />
       </View>
 
+      {formData.shareContactDetails === "Yes" && (
+        <>
+          <Text style={styles.sectionTitle}>Contact Number</Text>
+          <TextInput
+            style={[styles.input, errors.contactDetails && styles.errorInput]}
+            placeholder="Enter your contact number"
+            placeholderTextColor="#94A3B8"
+            value={formData.contactDetails}
+            onChangeText={(v: string) => handleChange("contactDetails", v)}
+            onBlur={() => handleInputBlur("contactDetails")}
+            keyboardType="phone-pad"
+            maxLength={15}
+            accessible={true}
+            accessibilityLabel="Contact Number"
+          />
+          {errors.contactDetails && <Text style={styles.errorMessage}>{errors.contactDetails}</Text>}
+        </>
+      )}
+
       <Text style={styles.sectionTitle}>Conversation Starter 1</Text>
       <TextInput
         style={[styles.input, errors.conStarter1 && styles.errorInput]}

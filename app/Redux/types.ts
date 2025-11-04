@@ -20,9 +20,15 @@ export interface UserDataState {
   [key: string]: any; // Fallback for dynamic API fields
 }
 
+// Onboarding state
+export interface OnboardingState {
+  isCompleted: boolean;
+}
+
 // Root store state (userData slice + future ones)
 export type RootState = {
   userData: UserDataState | null; // Auth slice (null = unauth)
+  onboarding: OnboardingState; // Onboarding slice
   // Add more: e.g., cart: CartState;
 };
 

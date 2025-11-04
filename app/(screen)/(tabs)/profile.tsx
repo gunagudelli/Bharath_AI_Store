@@ -96,6 +96,15 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ navigation }) => {
   const menuItems: MenuItem[] = [
      {
       id: 1,
+      icon: 'award',
+      type: 'Feather',
+      label: 'Awards & Rewards',
+      showArrow: true,
+      navigation: '/userflow/Awards_Rewards',
+      gradient: ['#F7971E', '#FFD200'] // gold/yellow hues, finance-friendly
+    },
+    {
+      id: 1,
       icon: 'hand-coin',
       type: 'MaterialCommunityIcons',
       label: 'My Crypto',

@@ -8,10 +8,12 @@ import {thunk} from 'redux-thunk';
 import { persistStore, persistReducer } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import userDataReducer from '../reducers/userDataReducer'; // Adjust path
+import onboardingReducer from '../reducers/onboardingReducer';
 
 // Root reducer
 const rootReducer = combineReducers({
   userData: userDataReducer, // Auth slice
+  onboarding: onboardingReducer, // Onboarding slice
   // Add more reducers, e.g., cart: cartReducer
 });
 
@@ -24,7 +26,7 @@ import type { PersistConfig } from 'redux-persist';
 const persistConfig: PersistConfig<ReturnType<typeof rootReducer>> = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['userData'], // Persist token/ID only
+  whitelist: ['userData', 'onboarding'], // Persist token/ID and onboarding status
 };
 
 const persistedReducer = persistReducer<ReturnType<typeof rootReducer>>(persistConfig, rootReducer);

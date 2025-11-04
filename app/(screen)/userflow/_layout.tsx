@@ -12,7 +12,7 @@ export default function ContactLayout() {
     >
      <Stack.Screen name="profileEdit" options={{ headerShown: true, title: 'Edit Profile' }} />
      <Stack.Screen name="GenOxyChatScreen" options={{ headerShown: true, title: (Array.isArray(title) ? title[0] : title) || 'Chat with Agent' }} />
-      
+      <Stack.Screen name="Awards_Rewards" options={{ headerShown: true, title: 'Awards & Rewards'}}/>
     </Stack>
   );
 }

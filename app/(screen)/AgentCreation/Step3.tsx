@@ -63,18 +63,9 @@ interface Step3Props {
 const Step3: React.FC<Step3Props> = ({ formData, handleChange, instructionOptions, fetchInstructions, isLoading, errors = {} }) => {
   const [showModal, setShowModal] = useState(false);
   const [editableSuggestion, setEditableSuggestion] = useState('');
-
-  // Conversation tone options
-  const conversationToneOptions: DropdownOption[] = [
-    { label: "Helpful, Professional", value: "Helpful, Professional" },
-    { label: "Friendly, Supportive", value: "Friendly, Supportive" },
-    { label: "Formal, Concise", value: "Formal, Concise" },
-    { label: "Expert, Analytical", value: "Expert, Analytical" },
-    { label: "Casual, Empathetic", value: "Casual, Empathetic" },
-  ];
-
-  // Options for dropdowns
-  const customerOptions: DropdownOption[] = [
+  const [customCustomer, setCustomCustomer] = useState('');
+  const [customerOptions, setCustomerOptions] = useState<DropdownOption[]>([
+    { label: "Select All", value: "SELECT_ALL" },
     { label: "IT Professionals", value: "IT Professionals" },
     { label: "Doctors", value: "Doctors" },
     { label: "Students", value: "Students" },
@@ -101,16 +92,55 @@ const Step3: React.FC<Step3Props> = ({ formData, handleChange, instructionOption
     { label: "Freelancers", value: "Freelancers" },
     { label: "Consultants", value: "Consultants" },
     { label: "Other", value: "Other" },
+  ]);
+
+  // Conversation tone options
+  const conversationToneOptions: DropdownOption[] = [
+    { label: "Helpful, Professional", value: "Helpful, Professional" },
+    { label: "Friendly, Supportive", value: "Friendly, Supportive" },
+    { label: "Formal, Concise", value: "Formal, Concise" },
+    { label: "Expert, Analytical", value: "Expert, Analytical" },
+    { label: "Casual, Empathetic", value: "Casual, Empathetic" },
   ];
+
+
   
   const ageOptions: DropdownOption[] = [
+    { label: "Select All", value: "SELECT_ALL" },
     { label: "Below 18", value: "Below 18" },
     { label: "18-25", value: "18-25" },
     { label: "26-40", value: "26-40" },
     { label: "40-55", value: "40-55" },
     { label: "55+", value: "55+" },
-    { label: "Other", value: "Other" },
   ];
+
+  const handleCustomerChange = (items: string[]) => {
+    if (items.includes("SELECT_ALL")) {
+      const allValues = customerOptions.filter(opt => opt.value !== "SELECT_ALL" && opt.value !== "Other").map(opt => opt.value);
+      handleChange("targetCustomers", allValues);
+    } else {
+      handleChange("targetCustomers", items);
+    }
+  };
+
+  const handleAgeChange = (items: string[]) => {
+    if (items.includes("SELECT_ALL")) {
+      const allValues = ageOptions.filter(opt => opt.value !== "SELECT_ALL").map(opt => opt.value);
+      handleChange("targetAgeLimit", allValues);
+    } else {
+      handleChange("targetAgeLimit", items);
+    }
+  };
+
+  const addCustomCustomer = () => {
+    if (customCustomer.trim()) {
+      const newOption = { label: customCustomer, value: customCustomer };
+      setCustomerOptions(prev => [...prev.filter(opt => opt.value !== "Other"), newOption, { label: "Other", value: "Other" }]);
+      const newCustomers = [...(formData.targetCustomers || []), customCustomer];
+      handleChange("targetCustomers", newCustomers);
+      setCustomCustomer('');
+    }
+  };
 
   // Handle checkbox changes
   const handleCheckboxChange = (field: keyof FormData, value: string): void => {
@@ -173,7 +203,7 @@ const Step3: React.FC<Step3Props> = ({ formData, handleChange, instructionOption
         placeholder="Select target customers"
         searchPlaceholder="Search customers..."
         value={formData.targetCustomers}
-        onChange={(items) => handleChange("targetCustomers", items)}
+        onChange={handleCustomerChange}
         mode="modal"
         onBlur={() => handleInputBlur("targetCustomers")}
       />
@@ -211,7 +241,7 @@ const Step3: React.FC<Step3Props> = ({ formData, handleChange, instructionOption
         valueField="value"
         placeholder="Select age ranges"
         value={formData.targetAgeLimit}
-        onChange={(items) => handleChange("targetAgeLimit", items)}
+        onChange={handleAgeChange}
         mode="modal"
         onBlur={() => handleInputBlur("targetAgeLimit")}
       />
@@ -237,6 +267,22 @@ const Step3: React.FC<Step3Props> = ({ formData, handleChange, instructionOption
           );
         })}
       </View>
+
+      {formData.targetCustomers?.includes("Other") && (
+        <View style={styles.customInputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter custom customer type"
+            placeholderTextColor="#94A3B8"
+            value={customCustomer}
+            onChangeText={setCustomCustomer}
+            maxLength={50}
+          />
+          <TouchableOpacity style={styles.addButton} onPress={addCustomCustomer}>
+            <Text style={styles.addButtonText}>Add</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <Text style={styles.label}>Target Audience Gender *</Text>
       <View style={[styles.checkboxContainer, errors.targetGender && styles.errorContainer]}>
@@ -554,6 +600,23 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     marginTop: 4,
     marginBottom: 8,
+  },
+  customInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  addButton: {
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });
 

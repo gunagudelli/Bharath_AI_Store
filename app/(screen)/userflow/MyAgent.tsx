@@ -234,7 +234,7 @@ const AllAgentCreations: React.FC = () => {
     );
   };
 
-  // Filter assistants based on search query
+  // Filter assistants based on search query (updated to include agentName)
   const filterAssistants = (query: string): void => {
     if (!assistantsData || !assistantsData.assistants) return;
 
@@ -248,6 +248,7 @@ const AllAgentCreations: React.FC = () => {
       return (
         (assistant.userRole && assistant.userRole.toLowerCase().includes(searchLower)) ||
         (assistant.name && assistant.name.toLowerCase().includes(searchLower)) ||
+        (assistant.agentName && assistant.agentName.toLowerCase().includes(searchLower)) || // Added: Filter by agentName
         (assistant.headerTitle && assistant.headerTitle.toLowerCase().includes(searchLower))
       );
     });
@@ -518,7 +519,7 @@ const AllAgentCreations: React.FC = () => {
     <View style={styles.searchContainer}>
       <TextInput
         style={styles.searchInput}
-        placeholder="Search by role, name, or title..."
+        placeholder="Search by role, agent name, user name, or title..." // Updated placeholder to include agent name
         placeholderTextColor="#94A3B8"
         value={searchQuery}
         onChangeText={handleSearchChange}

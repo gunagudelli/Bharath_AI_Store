@@ -11,7 +11,7 @@ const USER_ID = 'USER_ID' as const;
 
 // Generic action type
 export type ReduxAction<T = any> = {
-  type: typeof ACCESSTOKEN | typeof USER_ID | 'LOGOUT';
+  type: typeof ACCESSTOKEN | typeof USER_ID | 'LOGOUT' | 'COMPLETE_ONBOARDING' | 'RESET_ONBOARDING';
   payload: T;
 };
 
@@ -46,3 +46,14 @@ export const logout = (): any => async (dispatch: AppDispatch) => {
     console.error('Logout API error:', err);
   }
 };
+
+// Onboarding action creators
+export const completeOnboarding = (): ReduxAction<null> => ({
+  type: 'COMPLETE_ONBOARDING',
+  payload: null,
+});
+
+export const resetOnboarding = (): ReduxAction<null> => ({
+  type: 'RESET_ONBOARDING',
+  payload: null,
+});

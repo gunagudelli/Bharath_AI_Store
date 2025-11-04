@@ -153,7 +153,7 @@ const Step1: React.FC<Step1Props> = ({ formData, handleChange, errors = {} }) =>
     <View style={styles.stepContainer}>
       <Text style={styles.title}>Agent Creator Profile</Text>
 
-      <Text style={styles.label}>AI Agent Name *</Text>
+      <Text style={styles.label}>AI Agent Name * (Max 50 characters)</Text>
       <TextInput
         style={[styles.input, errors.agentName && styles.errorInput]}
         placeholder="Enter agent name"
@@ -161,9 +161,11 @@ const Step1: React.FC<Step1Props> = ({ formData, handleChange, errors = {} }) =>
         value={formData.agentName}
         onChangeText={(v: string) => handleChange("agentName", v)}
         onBlur={() => handleInputBlur("agentName")}
+        maxLength={50}
         accessible={true}
         accessibilityLabel="Agent Name"
       />
+      <Text style={styles.characterCount}>{formData.agentName.length}/50</Text>
       {errors.agentName && <Text style={styles.errorMessage}>{errors.agentName}</Text>}
 
       <Text style={styles.label}>Creator Name *</Text>
@@ -205,25 +207,29 @@ const Step1: React.FC<Step1Props> = ({ formData, handleChange, errors = {} }) =>
             placeholderTextColor="#94A3B8"
             value={formData.customUserRole}
             onChangeText={(v: string) => handleChange("customUserRole", v)}
+            maxLength={50}
             accessible={true}
             accessibilityLabel="Custom User Role"
           />
+          <Text style={styles.characterCount}>{(formData.customUserRole || '').length}/50</Text>
         </>
       )}
 
-      <Text style={styles.label}>Creator Experience Overview (optional)</Text>
+      <Text style={styles.label}>Creator Experience Overview (optional) (Max 500 characters)</Text>
       <TextInput
         style={styles.input}
         placeholder="Creator Experience Overview"
         placeholderTextColor="#94A3B8"
         value={formData.userExperienceSummary}
         onChangeText={(v: string) => handleChange("userExperienceSummary", v)}
+        maxLength={500}
         accessible={true}
         accessibilityLabel="Creator Experience Overview"
         multiline={true}
       />
+      <Text style={styles.characterCount}>{(formData.userExperienceSummary || '').length}/500</Text>
 
-      <Text style={styles.label}>Problems Solved in the Past (Description) *</Text>
+      <Text style={styles.label}>Problems Solved in the Past (Description) * (Max 250 characters)</Text>
       <TextInput
         style={[styles.input, errors.description && styles.errorInput]}
         placeholder="Description"
@@ -231,23 +237,27 @@ const Step1: React.FC<Step1Props> = ({ formData, handleChange, errors = {} }) =>
         value={formData.description}
         onChangeText={(v: string) => handleChange("description", v)}
         onBlur={() => handleInputBlur("description")}
+        maxLength={250}
         accessible={true}
         accessibilityLabel="Description"
         multiline={true}
       />
+      <Text style={styles.characterCount}>{(formData.description || '').length}/250</Text>
       {errors.description && <Text style={styles.errorMessage}>{errors.description}</Text>}
 
-      <Text style={styles.label}>Your Strengths in the Field (optional)</Text>
+      <Text style={styles.label}>Your Strengths in the Field (optional) (Max 150 characters)</Text>
       <TextInput
         style={styles.input}
         placeholder="Strengths"
         placeholderTextColor="#94A3B8"
         value={formData.strengths}
         onChangeText={(v: string) => handleChange("strengths", v)}
+        maxLength={150}
         accessible={true}
         accessibilityLabel="Strengths"
         multiline={true}
       />
+      <Text style={styles.characterCount}>{(formData.strengths || '').length}/150</Text>
 
       <Text style={styles.label}>Preferred Language</Text>
       <Dropdown
@@ -354,6 +364,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#EF4444',
     marginTop: 4,
+    marginBottom: 8,
+  },
+  characterCount: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'right',
+    marginTop: -8,
     marginBottom: 8,
   },
 });
