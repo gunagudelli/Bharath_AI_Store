@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-    marginBottom:30
+    marginBottom:60
   },
   flatListContent: {
     paddingHorizontal: 16,

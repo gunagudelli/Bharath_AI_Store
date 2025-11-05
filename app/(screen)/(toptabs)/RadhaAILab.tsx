@@ -517,7 +517,7 @@ const ReadMoreModal = ({ open, onClose, title, body }: { open: boolean; onClose:
  * @property {string} badge
  */
 
-const TileCard = ({ a, onOpen, badge }) => {
+const TileCard = ({ a, onOpen, badge }: { a: any; onOpen: () => void; badge: string }) => {
   const [showMore, setShowMore] = useState(false);
   const title = a.displayName || a.name || "Untitled Agent";
   const [imgError, setImgError] = useState(false);
@@ -585,9 +585,9 @@ const TileCard = ({ a, onOpen, badge }) => {
 
 const InsuranceTab = () => {
   const navigation = useNavigation();
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState(null);
+  const [err, setErr] = useState<string | null>(null);
 
   async function loadWhitelisted(initialAfter?: string) {
     let after = initialAfter;
@@ -609,11 +609,11 @@ const InsuranceTab = () => {
         setLoading(true);
         setErr(null);
         await loadWhitelisted();
-      } catch (e) {
-        const status = e?.response?.status;
-        const body = e?.response?.data;
+      } catch (e: any) {
+        const status = (e as any)?.response?.status;
+        const body = (e as any)?.response?.data;
         setErr(
-          body?.message || `Failed to load agents${status ? ` (HTTP ${status})` : ""}`
+          (body as any)?.message || `Failed to load agents${status ? ` (HTTP ${status})` : ""}`
         );
       } finally {
         setLoading(false);
@@ -625,7 +625,7 @@ const InsuranceTab = () => {
   //   Alert.alert("Open Insurance Agent", `Would open: ${a.displayName || a.name}`);
   // };
 
-const handleOpen = (assistant) => {
+const handleOpen = (assistant: any) => {
   Alert.alert("Open Insurance Agent", `Would open: ${assistant.displayName || assistant.name}`, [
     {
       text: "Cancel", 
@@ -720,11 +720,11 @@ function buildHealthcareListById(all: any[]): any[] {
   return all
     .filter((a) => {
       const id = (a.assistantId || a.id || "").trim();
-      return id && HC_ID_TO_CANONICAL[id];
+      return id && (HC_ID_TO_CANONICAL as any)[id];
     })
     .map((a) => {
       const id = (a.assistantId || a.id || "").trim();
-      const displayName = HC_ID_TO_CANONICAL[id];
+      const displayName = (HC_ID_TO_CANONICAL as any)[id];
       return { ...a, displayName };
     })
     .sort(
@@ -735,13 +735,13 @@ function buildHealthcareListById(all: any[]): any[] {
 
 const HealthcareTab = () => {
   const navigation = useNavigation();
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState(null);
+  const [err, setErr] = useState<string | null>(null);
 
-  async function loadWhitelisted(initialAfter) {
+  async function loadWhitelisted(initialAfter?: string) {
     let after = initialAfter;
-    let collected = [];
+    let collected: any[] = [];
     const target = Object.keys(HC_ID_TO_CANONICAL).length;
     for (let i = 0; i < 5; i++) {
       const res = await getAllAssistants(after);
@@ -759,11 +759,11 @@ const HealthcareTab = () => {
         setLoading(true);
         setErr(null);
         await loadWhitelisted();
-      } catch (e) {
-        const status = e?.response?.status;
-        const body = e?.response?.data;
+      } catch (e: any) {
+        const status = (e as any)?.response?.status;
+        const body = (e as any)?.response?.data;
         setErr(
-          body?.message || `Failed to load agents${status ? ` (HTTP ${status})` : ""}`
+          (body as any)?.message || `Failed to load agents${status ? ` (HTTP ${status})` : ""}`
         );
       } finally {
         setLoading(false);
@@ -771,7 +771,7 @@ const HealthcareTab = () => {
     })();
   }, []);
 
-  const handleOpen = (a) => {
+  const handleOpen = (a: any) => {
     Alert.alert("Open Healthcare Agent", `Would open: ${a.displayName || a.name}`);
   };
 
@@ -834,10 +834,10 @@ const HealthcareTab = () => {
    OTHER AGENTS TAB
    ============================================================ */
 const OtherAgentsTab = () => {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState(null);
-  const [selectedUrl, setSelectedUrl] = useState(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
   const [category, setCategory] = useState("ALL");
 
   useEffect(() => {
@@ -850,7 +850,7 @@ const OtherAgentsTab = () => {
         });
         const list = Array.isArray(res?.data) ? res.data : [];
         setItems(list);
-      } catch (e) {
+      } catch (e: any) {
         const status = e?.response?.status;
         const body = e?.response?.data;
         setErr(body?.message || `Failed to load (HTTP ${status || "?"})`);
@@ -863,10 +863,10 @@ const OtherAgentsTab = () => {
   const categories = useMemo(() => {
     const set = new Set();
     for (const it of items) {
-      const c = (it.categoryType || "").trim();
+      const c = ((it as any).categoryType || "").trim();
       if (c) set.add(c);
     }
-    return ["ALL", ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+    return ["ALL", ...Array.from(set).sort((a: any, b: any) => a.localeCompare(b))];
   }, [items]);
 
   const filtered = useMemo(
@@ -875,12 +875,12 @@ const OtherAgentsTab = () => {
         ? items
         : items.filter(
             (it) =>
-              (it.categoryType || "").toLowerCase() === category.toLowerCase()
+              ((it as any).categoryType || "").toLowerCase() === category.toLowerCase()
           ),
     [items, category]
   );
 
-  const openWithDisclaimer = (url) => setSelectedUrl(url);
+  const openWithDisclaimer = (url: string) => setSelectedUrl(url);
   
   const confirmNavigation = async () => {
     if (selectedUrl) {
@@ -935,10 +935,10 @@ const OtherAgentsTab = () => {
         <Text style={styles.filterLabel}>Category:</Text>
         <View style={styles.filterSelect}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {categories.map((c) => (
+            {categories.map((c: any) => (
               <TouchableOpacity
-                key={c}
-                onPress={() => setCategory(c)}
+                key={String(c)}
+                onPress={() => setCategory(String(c))}
                 style={[
                   styles.filterOption,
                   category === c && styles.filterOptionActive,
@@ -950,7 +950,7 @@ const OtherAgentsTab = () => {
                     category === c && styles.filterOptionTextActive,
                   ]}
                 >
-                  {c}
+                  {String(c)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -959,7 +959,7 @@ const OtherAgentsTab = () => {
       </View>
 
       <View style={styles.grid}>
-        {filtered.map((a) => {
+        {filtered.map((a: any) => {
           const title = a.agentName || "AI Agent";
           const fallbackImage = makeInitialsImage(title);
 

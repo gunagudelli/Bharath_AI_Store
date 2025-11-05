@@ -16,6 +16,7 @@ import {
   Linking, // Added for opening web URLs
 } from "react-native";
 import axios from "axios";
+import { LinearGradient } from "expo-linear-gradient";
 import BASE_URL from "../../../config";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AIRoleImage from "../AgentCreation/AIRoleImage";
@@ -46,25 +47,6 @@ interface ApiResponse {
   lastId: string | null;
   totalCount?: number;
 }
-
-const IMAGE_MAP: Record<string, string> = {
-  code: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1200&auto=format&fit=crop",
-  finance:
-    "https://media.licdn.com/dms/image/v2/D4D12AQH9ZTLfemnJgA/article-cover_image-shrink_720_1280/article-cover_image-shrink_720_1280/0/1730530043865?e=2147483647&v=beta&t=3GgdQbowwhu3jbuft6-XG2_jPZUSLa0XiCRgSz6AqBg",
-  business:
-    "https://media.istockphoto.com/id/1480239160/photo/an-analyst-uses-a-computer-and-dashboard-for-data-business-analysis-and-data-management.jpg?s=612x612&w=0&k=20&c=Zng3q0-BD8rEl0r6ZYZY0fbt2AWO9q_gC8lSrwCIgdk=",
-  technology: "https://www.bluefin.com/wp-content/uploads/2020/08/ai-future.jpg",
-  og: "https://i.ibb.co/gZjkJyQ8/1a.png",
-  irdai:
-    "https://www.livemint.com/lm-img/img/2024/05/30/600x338/Irdai_health_insurance_1717036677791_1717036677946.png",
-  gst: "https://zetran.com/wp-content/uploads/2025/02/GST-Compliance-and-Fraud-Detection-using-AI.jpg",
-  law: "https://royalsociety.org/-/media/events/2025/9/ai-and-the-law/ai-and-the-law-image.jpg",
-};
-
-const DEFAULT_IMAGE: string[] = [
-  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTFQjSgjdQbvnhDH7go4ETwAOEu05VpFIAOVg&s",
-  "https://www.bluefin.com/wp-content/uploads/2020/08/ai-future.jpg",
-];
 
 const WEB_IMAGE = "https://via.placeholder.com/300x200/8B5CF6/FFFFFF?text=🔍+Web"; // Placeholder for web results
 
@@ -99,7 +81,7 @@ const BharathAgentstore: React.FC = () => {
 
   // Fetch agents (unchanged)
   const getAgents = async (afterId: string | null = null, append: boolean = false): Promise<void> => {
-    console.log("Fetching agents, afterId:", afterId, "append:", append);
+    // console.log("Fetching agents, afterId:", afterId, "append:", append);
     try {
       if (!append) {
         setLoading(true);
@@ -107,7 +89,7 @@ const BharathAgentstore: React.FC = () => {
         setLoadingMore(true);
       }
       let url = `${BASE_URL}ai-service/agent/getAllAssistants?limit=40`;
-      console.log("Fetch URL:", url);
+      // console.log("Fetch URL:", url);
       if (afterId) {
         url += `&after=${afterId}`;
       }
@@ -138,7 +120,7 @@ const BharathAgentstore: React.FC = () => {
         }
         setLastId(nextCursor);
         if (result.totalCount !== undefined) setTotalCount(result.totalCount);
-        console.log("Approved agents + custom loaded:", agentsWithCustom.length);
+        // console.log("Approved agents + custom loaded:", agentsWithCustom.length);
       } else {
         console.log("No data received or invalid format");
         if (!append) setAgents([]);
@@ -194,27 +176,62 @@ const BharathAgentstore: React.FC = () => {
   }, []);
 
   // 🔹 Helper function (updated for web results)
-  const getAgentImage = (name: string | undefined, isWeb?: boolean): string => {
-    if (isWeb) {
-      return WEB_IMAGE;
-    }
-    if (!name) {
-      return DEFAULT_IMAGE[Math.floor(Math.random() * DEFAULT_IMAGE.length)];
-    }
-    const lowerName = name.toLowerCase();
-    // Special case: OG Fan Story Predictor
-    if (lowerName.includes("og")) {
-      return IMAGE_MAP.og;
-    }
-    // Check for keywords in name
-    for (const key in IMAGE_MAP) {
-      if (lowerName.includes(key)) {
-        return IMAGE_MAP[key as keyof typeof IMAGE_MAP];
-      }
-    }
-    // Fallback random image
-    return DEFAULT_IMAGE[Math.floor(Math.random() * DEFAULT_IMAGE.length)];
-  };
+  // const getAgentImage = (name: string | undefined, isWeb?: boolean, imageUrl?: string ): string => {
+  //   if(imageUrl){
+  //     return imageUrl;
+  //   }
+  //   // if (isWeb) {
+  //   //   return WEB_IMAGE;
+  //   // }
+  //   // if (!name) {
+  //   //   return DEFAULT_IMAGE[Math.floor(Math.random() * DEFAULT_IMAGE.length)];
+  //   // }
+  //   const lowerName = name?.toLowerCase();
+  //   // Special case: OG Fan Story Predictor
+  //   if (lowerName.includes("og")) {
+  //     return IMAGE_MAP.og;
+  //   }
+  //   // Check for keywords in name
+  //   for (const key in IMAGE_MAP) {
+  //     if (lowerName.includes(key)) {
+  //       return IMAGE_MAP[key as keyof typeof IMAGE_MAP];
+  //     }
+  //   }
+  //   // Fallback random image
+  //   return DEFAULT_IMAGE[Math.floor(Math.random() * DEFAULT_IMAGE.length)];
+  // };
+
+  const getAgentImage = (
+  name: string | undefined,
+  isWeb?: boolean,
+  imageUrl?: string
+): string => {
+  // 1️⃣ If there's an image URL, return it
+  if (imageUrl && imageUrl.trim() !== "") {
+    return imageUrl;
+  }
+
+  // 2️⃣ If no name, return default placeholder text
+  if (!name || name.trim() === "") {
+    return "N/A";
+  }
+
+  // 3️⃣ Extract initials from the name
+  const parts = name.trim().split(" ");
+  let initials = "";
+
+  if (parts.length === 1) {
+    // Single name (e.g., "Sai")
+    initials = parts[0][0].toUpperCase();
+  } else {
+    // Multiple words (e.g., "AI Bot")
+    initials = parts[0][0].toUpperCase() + parts[1][0].toUpperCase();
+  }
+
+  // 4️⃣ Return initials (or you could return formatted like “AI Bot - AB”)
+  return `${name} - ${initials}`;
+};
+
 
   // Fixed: Use useFocusEffect properly
   useFocusEffect(
@@ -337,113 +354,140 @@ const BharathAgentstore: React.FC = () => {
     return clean.length > 120 ? clean.substring(0, 117) + "..." : clean;
   };
 
-  // Updated: Render agent card (handles web results)
-  const renderAgentCard = ({ item }: { item: AgentItem }): React.ReactElement => {
-    const agent: AgentItem = item.assistant || item;
-    const price: string = agent.price || "Free";
-    const rating: number = agent.rating || 5;
-    const isGridMode: boolean = viewMode === "grid";
-    const agentImage: string = getAgentImage(agent.name, agent.isWeb);
-    const isWebResult: boolean = !!agent.isWeb;
-    return (
-      <TouchableOpacity
-        style={[
-          styles.agentCard,
-          isGridMode ? styles.gridCard : styles.listCard,
-        ]}
-        onPress={() => goToChat(agent)}
-        activeOpacity={0.8}
-      >
-        {/* 🔹 Agent Image */}
-        <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: agentImage }}
-            style={[isGridMode ? styles.agentImage : styles.listImage]}
-            resizeMode="cover"
-          />
-        </View>
-        {/* Card Header */}
-        <View style={styles.cardHeader}>
-          <View style={styles.headerInfo}>
-            <Text style={styles.agentName} numberOfLines={2}>
-              {agent.name || "Unnamed Assistant"}
-            </Text>
-            <View style={styles.metaRow}>
-              {isWebResult ? (
-                <View
-                  style={[
-                    styles.statusBadge,
-                    { backgroundColor: "#3B82F6" }, // Blue for web
-                  ]}
-                >
-                  <Text style={styles.statusText}>Web</Text>
-                </View>
-              ) : (
-                <View
-                  style={[
-                    styles.statusBadge,
-                    { backgroundColor: getStatusColor("active") },
-                  ]}
-                >
-                  <View style={styles.statusDot} />
-                  <Text style={styles.statusText}>Active</Text>
-                </View>
-              )}
-              <Text style={styles.price}>
-                {price === "Free" ? "Free" : `₹${price}`}
-              </Text>
-            </View>
-          </View>
-        </View>
-        {/* Description */}
-        <Text style={styles.agentPreview} numberOfLines={isGridMode ? 2 : 3}>
-          {getPreview(agent.description || agent.instructions)}
-        </Text>
-        {/* Rating & Button */}
-        <View style={styles.cardFooter}>
-          <View style={styles.ratingContainer}>
-            {[...Array(5)].map((_, i: number) => (
-              <Text
-                key={i}
-                style={[styles.star, i < rating ? styles.filledStar : {}]}
-              >
-                ★
-              </Text>
-            ))}
-            <Text style={styles.ratingText}>({rating}.0)</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.useButton}
-            onPress={() => goToChat(agent)}
-          >
-            <Text style={styles.useButtonText}>
-              {isWebResult ? "Open Link" : "Use Agent"}
-            </Text>
-            <Text style={styles.arrowIcon}>→</Text>
-          </TouchableOpacity>
-        </View>
-        {/* Corner Accent */}
-        <View style={styles.cornerAccent} />
-      </TouchableOpacity>
-    );
+
+const renderAgentCard = ({ item }: { item: AgentItem }): React.ReactElement => {
+  const agent: AgentItem = item.assistant || item;
+  const price: string = agent.price || "Free";
+  const rating: number = agent.rating || 5;
+  const isGridMode: boolean = viewMode === "grid";
+  const agentImage: string = getAgentImage(agent.name, agent.isWeb, agent.imageUrl);
+  const isWebResult: boolean = !!agent.isWeb;
+
+  // Check if it's a valid image URL
+  const isImageUrl = agentImage.startsWith("http") || agentImage.startsWith("https");
+
+  // 🌈 Generate deterministic gradient for each agent name
+  const getGradientFromName = (name: string | undefined): string[] => {
+    if (!name) return ["#9CA3AF", "#6B7280"]; // gray fallback
+    const gradients = [
+      ["#FF9A9E", "#FAD0C4"],
+      ["#A18CD1", "#FBC2EB"],
+      ["#F6D365", "#FDA085"],
+      ["#84FAB0", "#8FD3F4"],
+      ["#FFDEE9", "#B5FFFC"],
+      ["#C6EA8D", "#FE90AF"],
+      ["#E0C3FC", "#8EC5FC"],
+      ["#FFD3A5", "#FD6585"],
+    ];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return gradients[Math.abs(hash) % gradients.length];
   };
 
-  // Helper functions for dynamic styling (unchanged)
-  const getAvatarColor = (name: string | undefined): string => {
-    const colors: string[] = [
-      "#8B5CF6",
-      "#EC4899",
-      "#10B981",
-      "#F59E0B",
-      "#3B82F6",
-      "#EF4444",
-      "#8B5A2B",
-    ];
-    const index: number = typeof name === "string" && name.length > 0
-      ? name.charCodeAt(0) % colors.length
-      : 0;
-    return colors[index];
-  };
+  const gradientColors = getGradientFromName(agent.name);
+  const initials = agentImage.replace(`${agent.name} - `, "");
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.agentCard,
+        isGridMode ? styles.gridCard : styles.listCard,
+      ]}
+      onPress={() => goToChat(agent)}
+      activeOpacity={0.8}
+    >
+      {/* 🔹 Agent Image / Gradient Avatar */}
+      <View style={[styles.imageContainer, isGridMode && styles.fullImageContainer]}>
+        {isImageUrl ? (
+          <Image
+            source={{ uri: agentImage }}
+            style={[isGridMode ? styles.fullAgentImage : styles.listImage]}
+            resizeMode="cover"
+          />
+        ) : (
+          <LinearGradient
+            colors={gradientColors as [string, string]}
+            style={[isGridMode ? styles.fullAgentImage : styles.listImage,styles.circularAvatar]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={styles.fallbackText}>{initials}</Text>
+          </LinearGradient>
+        )}
+      </View>
+
+      {/* 🔹 Card Header */}
+      <View style={styles.cardHeader}>
+        <View style={styles.headerInfo}>
+          <Text style={styles.agentName} numberOfLines={2}>
+            {agent.name || "Unnamed Assistant"}
+          </Text>
+          <View style={styles.metaRow}>
+            {isWebResult ? (
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: "#3B82F6" },
+                ]}
+              >
+                <Text style={styles.statusText}>Web</Text>
+              </View>
+            ) : (
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: getStatusColor("active") },
+                ]}
+              >
+                <View style={styles.statusDot} />
+                <Text style={styles.statusText}>Active</Text>
+              </View>
+            )}
+            <Text style={styles.price}>
+              {price === "Free" ? "Free" : `₹${price}`}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* 🔹 Description */}
+      <Text style={styles.agentPreview} numberOfLines={isGridMode ? 2 : 3}>
+        {getPreview(agent.description || agent.instructions)}
+      </Text>
+
+      {/* 🔹 Rating & Button */}
+      <View style={styles.cardFooter}>
+        <View style={styles.ratingContainer}>
+          {[...Array(5)].map((_, i: number) => (
+            <Text
+              key={i}
+              style={[styles.star, i < rating ? styles.filledStar : {}]}
+            >
+              ★
+            </Text>
+          ))}
+          <Text style={styles.ratingText}>({rating}.0)</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.useButton}
+          onPress={() => goToChat(agent)}
+        >
+          <Text style={styles.useButtonText}>
+            {isWebResult ? "Open Link" : "Use Agent"}
+          </Text>
+          <Text style={styles.arrowIcon}>→</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Corner Accent */}
+      <View style={styles.cornerAccent} />
+    </TouchableOpacity>
+  );
+};
+
+
 
   const getStatusColor = (status: string): string => {
     return status === "active" ? "#10B981" : "#64748B";
@@ -499,11 +543,11 @@ const BharathAgentstore: React.FC = () => {
           )}
         </View>
       </View>
-      <TouchableOpacity
+      {/* <TouchableOpacity
         onPress={() => router.push("/(auth)/register")}
       >
         <AIRoleImage />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
       {/* Stats & View Toggle */}
       <View style={styles.statsContainer}>
         <Text style={styles.statsText}>
@@ -512,8 +556,13 @@ const BharathAgentstore: React.FC = () => {
             : `${localAgents.length} assistant${localAgents.length !== 1 ? "s" : ""} available`
           }
         </Text>
-        {/* <View style={styles.viewToggle}>
-          <TouchableOpacity
+        <View style={styles.viewToggle}>
+          <ActivityIndicator
+            size="large"
+            color="#8B5CF6"
+            animating={loadingMore}
+          />
+          {/* <TouchableOpacity
             style={[
               styles.toggleButton,
               viewMode === "list" && styles.toggleButtonActive,
@@ -544,8 +593,8 @@ const BharathAgentstore: React.FC = () => {
             >
               ⊞
             </Text>
-          </TouchableOpacity>
-        </View> */}
+          </TouchableOpacity> */}
+        </View>
       </View>
     </View>
   );
@@ -700,9 +749,9 @@ const styles = StyleSheet.create({
   },
   viewToggle: {
     flexDirection: "row",
-    backgroundColor: "#F1F5F9",
+    // backgroundColor: "#F1F5F9",
     borderRadius: 8,
-    padding: 2,
+    padding: 5,
   },
   toggleButton: {
     paddingHorizontal: 12,
@@ -773,6 +822,36 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
+ fullImageContainer: {
+  width: "100%",
+  height: 160,
+  borderTopLeftRadius: 12,
+  borderTopRightRadius: 12,
+  overflow: "hidden",
+},
+
+fullAgentImage: {
+  width: "100%",
+  height: "100%",
+  alignItems: "center",
+  justifyContent: "center",
+},
+
+circularAvatar: {
+   width: "100%",
+  height: 120,
+  borderRadius: 30,
+  alignItems: "center",
+  justifyContent: "center",
+  overflow: "hidden",
+},
+
+fallbackText: {
+  fontSize: 42,
+  fontWeight: "900",
+  color: "#fff",
+  textAlign: "center",
+},
   listImage: {
     width: "100%",
     height: 240,
