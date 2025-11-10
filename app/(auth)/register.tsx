@@ -98,7 +98,8 @@ const RegisterScreen: React.FC = () => {
         },
       });
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to send OTP. Try again.';
+      console.log('Error sending OTP:', err.response || err);
+      const errorMessage = err.response?.data?.error || 'Failed to send OTP. Try again.';
       setError(errorMessage);
       Alert.alert('Error', errorMessage);
     } finally {

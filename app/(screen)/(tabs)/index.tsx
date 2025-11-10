@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
   topTabs: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
   tab: { flex: 1, paddingVertical: 16, alignItems: 'center' },
   activeTab: { borderBottomWidth: 3, borderBottomColor: '#667eea' },
-  tabText: { fontSize: 14, fontWeight: '600', color: '#9CA3AF' },
-  activeTabText: { color: '#667eea' },
+  tabText: { fontSize: 14, fontWeight: '900', color: '#9CA3AF' },
+  activeTabText: { color: '#667eea', fontWeight: '700' },
   content: { flex: 1 }
 });

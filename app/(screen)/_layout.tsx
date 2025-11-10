@@ -25,8 +25,6 @@ export default function ScreenLayout() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="AgentCreation/AIRole" options={{ headerShown: true, title: 'Agent Roles' }} />
       <Stack.Screen name="AgentCreation/agentCreation" options={{ headerShown: true, title: 'Create Agent' }} />
-      
-      {/* Add other (screen) routes here as needed */}
     </Stack>
   );
 }

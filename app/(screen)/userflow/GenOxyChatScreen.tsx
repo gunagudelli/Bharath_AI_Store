@@ -68,6 +68,7 @@ const GenOxyChatScreen: React.FC<Props> = () => {
   const { query, category, assistantId, agentName, fd, agentId } = useLocalSearchParams<{query?: string, category?: string, assistantId: string, agentName: string, fd?: any, agentId: string}>();
   const flatListRef = useRef<FlatList>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [description, setDescription] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false);
   const [speakingMessageId, setSpeakingMessageId] = useState<number | null>(null);
@@ -77,7 +78,8 @@ const GenOxyChatScreen: React.FC<Props> = () => {
  const token = useSelector((state: RootState) => state.userData?.accessToken);
  const userId = useSelector((state: RootState) => state.userData?.userId);
 
-  const API_URL: string = `https://meta.oxyloans.com/api/student-service/user/askquestion?assistantId=${assistantId}`;
+  // const API_URL: string = `https://meta.oxyloans.com/api/student-service/user/askquestion?assistantId=${assistantId}`;
+  const API_URL: string = `https://meta.oxyloans.com/api/ai-service/agent/agentChat`;
   const HELPER_QUESTIONS_URL: string = `https://meta.oxyloans.com/api/ai-service/agent/getConversation/${agentId}`;
 
   // Fetch helper questions
@@ -93,10 +95,12 @@ const GenOxyChatScreen: React.FC<Props> = () => {
           timeout: 10000,
         });
 
-        // console.log("Helper questions response:", response.data[0]);
+        console.log("Helper questions response:", response.data[0]);
 
         // Extract conversation starters from response
         const data = response.data[0] || {};
+        const description = data.description || "";
+        setDescription(description);
         const questions: string[] = [
           data.conStarter1,
           data.conStarter2,
@@ -251,10 +255,17 @@ const GenOxyChatScreen: React.FC<Props> = () => {
             content: msg.content,
           }));
 
-        console.log("📤 Sending to API:", conversationHistory);
+       
+        let requestPayload: any = {
+          userId: userId,
+          agentId: agentId,
+          messageHistory: conversationHistory,
+        };
 
-        const response = await axios.post(API_URL, conversationHistory, {
-          headers: { "Content-Type": "application/json" },
+         console.log("📤 Sending to API:", requestPayload);
+
+        const response = await axios.post(API_URL, requestPayload, {
+          headers: { "Content-Type": "application/json",Authorization: `Bearer ${token}` },
           timeout: 30000,
         });
 
@@ -418,13 +429,14 @@ const GenOxyChatScreen: React.FC<Props> = () => {
 
   // Render helper questions
   const renderHelperQuestions = (): React.ReactElement | null => {
-    if (messages.length > 0 || loadingHelperQuestions || helperQuestions.length === 0) {
+    if (messages.length > 0) {
       return null;
     }
 
     return (
       <View style={styles.helperContainer}>
         <Text style={styles.helperTitle}>Welcome to {agentName}!</Text>
+          <Text style={styles.headerSubtitle}>{description}</Text>
         <Text style={styles.headerSubtitle}>Start chatting to explore how this assistant can help you.</Text>
         {helperQuestions.map((question: string, index: number) => (
           <TouchableOpacity
@@ -573,11 +585,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#2563eb20",
   },
   helperContainer: {
-    flex: 1,
+    // flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    alignSelf: "center",
     paddingHorizontal: 16,
     paddingVertical: 20,
+    backgroundColor: "#ffff",
+    width: "90%",
+    borderRadius: 12,
+    // maxWidth: 400,
     // gap: 8,
   },
   helperTitle: {
@@ -586,12 +603,15 @@ const styles = StyleSheet.create({
     color: "#1f2937",
     marginBottom: 8,
     fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
+    textAlign: "center",
   },
   headerSubtitle: {
     fontSize: 16,
     color: "#666",
     lineHeight: 22,
     marginBottom: 20,
+    fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
+    textAlign: "center",
   },
   helperChip: {
     paddingHorizontal: 16,

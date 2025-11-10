@@ -60,6 +60,7 @@ interface Assistant {
   created_at: string;
   updatedAt: string;
   assistantId?: string;
+  agentId?: string;
   profileImagePath?: string;
 }
 
@@ -366,6 +367,27 @@ const AllAgentCreations: React.FC = () => {
               </Text>
             </TouchableOpacity>
           </View>
+          <TouchableOpacity
+              style={{...styles.updatebtn, marginTop: 10,alignSelf:"flex-end"}}
+              onPress={() =>{
+              router.push({
+                      pathname: '/userflow/GenOxyChatScreen',
+                      params: {
+                      assistantId: assistant.assistantId,
+                       query: "",
+                       category: "Assistant",
+                      agentName: assistant.agentName || "Assistant",
+                      fd: null,
+                      agentId: assistant?.id,
+                      title: assistant.agentName || "Chat with Agent",
+                    }
+                    });
+                  }
+                }>
+              <Text style={styles.updateText}>
+                 Use Agent  <Ionicons name="arrow-forward" size={13} color="#3730A3" style={{marginLeft: 5, fontWeight: '900'}} />
+              </Text>
+            </TouchableOpacity>
         </View>
 
         {/* Card Body */}
@@ -554,7 +576,10 @@ const AllAgentCreations: React.FC = () => {
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.createBtn}
-        onPress={() => router.push('/(screen)/AgentCreation/AIRole')}>
+        onPress={() => 
+        // router.push('/(screen)/AgentCreation/AIRole')
+        router.push('/NewAgentCreation/AgentCreationScreen')
+        }>
         <Text style={{ color: 'white' }}>Create agent</Text>
       </TouchableOpacity>
       {renderSearchBar()}

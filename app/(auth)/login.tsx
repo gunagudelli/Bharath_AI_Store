@@ -97,7 +97,7 @@ console.log(phoneInput.current)
       });
     } catch (err: any) {
       console.log("Error",err.response)
-      const errorMessage = err.response?.data?.message || 'Failed to send OTP. Try again.';
+      const errorMessage = err.response?.data?.error || 'Failed to send OTP. Try again.';
       setError(errorMessage);
       Alert.alert('Error', errorMessage);
     } finally {

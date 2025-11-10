@@ -364,9 +364,9 @@ const handleOpen = (assistant: any) => {
         <Text style={styles.emptyIcon}>🤖</Text>
         <Text style={styles.emptyTitle}>No Approved Agents Found</Text>
         <Text style={styles.emptyDescription}>
-          We didn't find approved agents for{" "}
+          {`We didn't find approved agents for{" "}`}
           <Text style={styles.codeText}>9f2cf68b-6f03-417d-a903-be7d80d2d927</Text>.
-          Make sure you're logged in as the right user, or check the agent status in the backend.
+          {`Make sure you're logged in as the right user, or check the agent status in the backend.`}
         </Text>
       </View>
     );
@@ -810,7 +810,7 @@ const HealthcareTab = () => {
         <Text style={styles.emptyIcon}>🤖</Text>
         <Text style={styles.emptyTitle}>No Agents Found</Text>
         <Text style={styles.emptyDescription}>
-          We couldn't find the requested healthcare agents. Try again later.
+          {`We couldn't find the requested healthcare agents. Try again later.`}
         </Text>
       </View>
     );
@@ -1071,19 +1071,13 @@ const RadhaAILab = () => {
              
 
               <Text style={styles.headerParagraph}>
-                I'm genuinely excited about the AI Agents roadmap we're building
-                at Bharat AI Store. My personal mission is simple — to make every
-                task in our company executable by an AI Agent.
+                {`I'm genuinely excited about the AI Agents roadmap we're building at Bharat AI Store. My personal mission is simple — to make every task in our company executable by an AI Agent.`}
               </Text>
               <Text style={styles.headerParagraph}>
-                As part of this journey, I'm experimenting daily with dozens of
-                AI Agents — some smart, some still learning, all evolving. Each
-                one represents a step toward a more autonomous, scalable future.
+                {`As part of this journey, I'm experimenting daily with dozens of AI Agents — some smart, some still learning, all evolving. Each one represents a step toward a more autonomous, scalable future.`}
               </Text>
               <Text style={styles.headerParagraph}>
-                Below, you'll find a growing collection of my live experiments.
-                These agents may be basic today, but together, they represent
-                the foundation of the AI-driven enterprise of tomorrow.
+               {` Below, you'll find a growing collection of my live experiments. These agents may be basic today, but together, they represent the foundation of the AI-driven enterprise of tomorrow.`}
               </Text>
               <Text style={styles.headerSignature}>
                 CEO & Founder{"\n"}
@@ -1257,7 +1251,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#1a1a1a",
+    color: "#9333ea",
     marginBottom: 12,
     width:SCREEN_WIDTH*0.65
   },
@@ -1269,7 +1263,7 @@ const styles = StyleSheet.create({
   },
   headerSignature: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "800",
     color: "#333",
     lineHeight: 20,
     marginTop: 8,

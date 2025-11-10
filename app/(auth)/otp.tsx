@@ -154,7 +154,7 @@ const OTPScreen: React.FC = () => {
       router.replace('/(screen)/(tabs)');
     } catch (err: any) {
       console.error('Verification error:', err.response?.data);
-      setError(err.response?.data?.message || 'Verification failed. Please try again.');
+      setError(err.response?.data?.error || 'Verification failed. Please try again.');
       setOtp(Array(otpLength).fill(''));
       inputRefs.current[0]?.focus();
     } finally {
@@ -210,7 +210,7 @@ const OTPScreen: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Resend error:', err.response?.data);
-      const errorMessage = err.response?.data?.message || 'Failed to resend code. Please try again.';
+      const errorMessage = err.response?.data?.error || 'Failed to resend code. Please try again.';
       setError(errorMessage);
       Alert.alert('Error', errorMessage);
     } finally {
