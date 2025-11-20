@@ -27,6 +27,8 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../Redux/types";
 import { useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import ChatHistoryDrawer from "./ChatHistoryDrawer";
+import { log } from "console";
 // import { useSelector } from "react-redux";
 
 const { height: screenHeight } = Dimensions.get("window");
@@ -64,6 +66,11 @@ interface ConversationHistoryItem {
   content: string;
 }
 
+interface ParsedMessage {
+  role: string;
+  content: string;
+}
+
 const GenOxyChatScreen: React.FC<Props> = () => {
   const { query, category, assistantId, agentName, fd, agentId } = useLocalSearchParams<{query?: string, category?: string, assistantId: string, agentName: string, fd?: any, agentId: string}>();
   const flatListRef = useRef<FlatList>(null);
@@ -77,6 +84,34 @@ const GenOxyChatScreen: React.FC<Props> = () => {
   const fadeAnims = useRef<Map<number, Animated.Value>>(new Map()).current;
  const token = useSelector((state: RootState) => state.userData?.accessToken);
  const userId = useSelector((state: RootState) => state.userData?.userId);
+
+   const [openHistory, setOpenHistory] = useState(false);
+
+  const handleContinue = (parsedMessages: any[],message: any[]) => {
+     console.log("Continuing with parsed messages:", message);
+    // Convert ParsedMessage[] to Message[] and restore full thread
+    const messages: Message[] = parsedMessages.map((msg, index) => ({
+      role: (msg.role || "assistant") as "user" | "assistant",
+      content: msg.content || "",
+      id: Date.now() + index,
+    }));
+    
+    setMessages(messages);
+  };
+
+  const handleStartNewThread = (parsedMessages: any[]) => {
+    // Convert ParsedMessage[] to Message[] and start new thread
+    const messages: Message[] = parsedMessages.map((msg, index) => ({
+      role: (msg.role || "assistant") as "user" | "assistant",
+      content: msg.content || "",
+      id: Date.now() + index,
+    }));
+    setMessages([]);
+    setMessages(messages);
+    // optionally auto-send last user message:
+    const lastUser = [...messages].reverse().find(m => m.role === "user");
+    if (lastUser) sendMessage(lastUser.content);
+  };
 
   // const API_URL: string = `https://meta.oxyloans.com/api/student-service/user/askquestion?assistantId=${assistantId}`;
   const API_URL: string = `https://meta.oxyloans.com/api/ai-service/agent/agentChat`;
@@ -389,7 +424,7 @@ const GenOxyChatScreen: React.FC<Props> = () => {
       >
         {item.role === "user" ? (
           <Text style={[styles.messageText, { color: "#fff" }]}>
-            {item.displayContent}
+            {item.displayContent  || item.content}
           </Text>
         ) : item.temp ? (
           <View style={styles.loadingContainer}>
@@ -459,6 +494,16 @@ const GenOxyChatScreen: React.FC<Props> = () => {
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 50}
     >
       <StatusBar barStyle="dark-content" backgroundColor="#f4f4f5" />
+      {/* <View style={styles.header}>
+          <Text style={styles.headerTitle}>Oxy.AI</Text>
+
+          <TouchableOpacity
+            onPress={() => setOpenHistory(true)}
+            style={{ padding: 6 }}
+          >
+            <Ionicons name="time-outline" size={24} color="#111" />
+          </TouchableOpacity>
+        </View> */}
 
       {/* Chat and Helper Questions */}
       <View style={styles.chatContainer}>
@@ -498,6 +543,15 @@ const GenOxyChatScreen: React.FC<Props> = () => {
         //   loading={loading}
         />
       </View>
+      {/* <ChatHistoryDrawer
+        visible={openHistory}
+        onClose={() => setOpenHistory(false)}
+        onContinueChat={handleContinue}
+        onStartNewThread={handleStartNewThread}
+        token={token}
+        widthPercent={0.86}
+      /> */}
+
     </KeyboardAvoidingView>
   );
 };
@@ -651,6 +705,22 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: "#d1d5db",
+  },
+  header: {
+    height: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    backgroundColor: "#f4f4f5",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",    
+    color: "#1f2937",
+    fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
   },
 });
 

@@ -6,6 +6,7 @@ import {
   Dimensions,
   ScrollView,
   StyleSheet,
+  TextInput,
   Text,
   TouchableOpacity,
   View,
@@ -25,6 +26,9 @@ const LoginScreen: React.FC = () => {
   const [authMethod, setAuthMethod] = useState<'sms' | 'whatsapp'>('whatsapp');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+ const otpLength = 6;
+const [otp, setOtp] = useState<string[]>(Array(otpLength).fill(''));
+const inputRefs = useRef<Array<TextInput | null>>([]);
   const phoneInput = useRef<PhoneInput>(null);
   const router = useRouter();
   
@@ -95,14 +99,43 @@ console.log(phoneInput.current)
           expiryTime: response.data.otpGeneratedTime
         },
       });
-    } catch (err: any) {
-      console.log("Error",err.response)
-      const errorMessage = err.response?.data?.error || 'Failed to send OTP. Try again.';
-      setError(errorMessage);
-      Alert.alert('Error', errorMessage);
-    } finally {
-      setLoading(false);
-    }
+} catch (err: any) {
+  console.error("Verification error:", err.response?.data);
+
+  const status = err.response?.status;
+  const serverError = err.response?.data?.error || "";
+  const errorMessage = err.response?.data?.message || "Verification failed. Please try again.";
+
+  // 🔹 Handle 500 errors and unregistered user cases
+  if (
+    status === 500 ||
+    errorMessage.includes("not registered") ||
+    serverError.includes("Internal Server Error")
+  ) {
+    Alert.alert(
+      "Not Registered",
+      "You are not registered, please register to continue.",
+      [
+        {
+          text: "OK",
+          onPress: () => router.push("/(auth)/register"),
+        },
+      ]
+    );
+  } else {
+    setError(errorMessage);
+    Alert.alert("Error", errorMessage);
+  }
+
+setOtp(Array(otpLength).fill(""));
+setTimeout(() => {
+  inputRefs.current[0]?.focus();
+}, 100);
+
+} finally {
+  setLoading(false);
+}
+
   };
 
   return (

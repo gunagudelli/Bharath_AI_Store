@@ -1,30 +1,27 @@
-import {
-  Dimensions,
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-  RefreshControl,
-  TextInput,
-  Image,
-  Alert,
-} from 'react-native';
-import React, { useState, useEffect, useCallback, JSX } from 'react';
-// Import the React namespace for JSX.Element type
-import { useFocusEffect } from '@react-navigation/native';
-import { useNavigation } from '@react-navigation/native';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import axios, { AxiosResponse } from 'axios';
-import BASE_URL from '../../../config';
-import ImageUpload from './ImageUpload';
-import FileUpload from './FileUpload';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
-import ColoredScrollFlatList from './FlatlistScroll';
-import { useSelector } from "react-redux";
-import { RootState } from "../../Redux/types";
 import { router } from 'expo-router';
+import React, { JSX, useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import { useSelector } from "react-redux";
+import BASE_URL from '../../../config';
+import { RootState } from "../../Redux/types";
+import FileUpload from './FileUpload';
+import ColoredScrollFlatList from './FlatlistScroll';
+import ImageUpload from './ImageUpload';
 
 const { height, width } = Dimensions.get('window');
 
@@ -32,7 +29,6 @@ interface User {
   accessToken: string;
   userId: string;
 }
-
 
 interface AgentFile {
   fileName: string;
@@ -60,7 +56,6 @@ interface Assistant {
   created_at: string;
   updatedAt: string;
   assistantId?: string;
-  agentId?: string;
   profileImagePath?: string;
 }
 
@@ -75,14 +70,15 @@ const AllAgentCreations: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [expandedInstructions, setExpandedInstructions] = useState<Record<string, boolean>>({});
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState<boolean>(false);
+  const [expandedDescription, setExpandedDescription] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFileUpload, setShowFileUpload] = useState<string | undefined>(undefined);
-  const [showImageUpload, setShowImageUpload] = useState<Record<string, boolean>>({});
   const [agentFile, setAgentFile] = useState<Record<string, AgentFile[]>>({});
   const [showAgentFile, setShowAgentFile] = useState<Record<string, boolean>>({});
+  
   const token = useSelector((state: RootState) => state.userData?.accessToken);
   const userId = useSelector((state: RootState) => state.userData?.userId);
+
   const fetchAssistants = (): void => {
     setLoading(true);
     axios({
@@ -106,7 +102,7 @@ const AllAgentCreations: React.FC = () => {
   const getAgentFile = (assistantId: string): void => {
     console.log('getting agent file');
     axios
-      .get(`${BASE_URL}ai-service/agent/getUploaded?assistantId=${assistantId}`,{
+      .get(`${BASE_URL}ai-service/agent/getUploaded?assistantId=${assistantId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -114,10 +110,8 @@ const AllAgentCreations: React.FC = () => {
       .then((response: AxiosResponse<AgentFile[]>) => {
         console.log(response.data);
         if (response.data.length === 0) {
-          console.log('showAgentFile', showAgentFile);
           setShowAgentFile((prev) => ({ ...prev, [assistantId]: false }));
         } else {
-          console.log('showAgentFile', showAgentFile);
           setShowAgentFile((prev) => ({ ...prev, [assistantId]: true }));
           setAgentFile((prev) => ({ ...prev, [assistantId]: response.data }));
         }
@@ -180,17 +174,16 @@ const AllAgentCreations: React.FC = () => {
         }
       })
       .catch((error: any) => {
-        // console.error("Error removing file:", error.response);
+        console.error("Error removing file:", error);
       });
   };
 
   const renderAgentFileInfo = ({ item, assistantId }: { item: AgentFile; assistantId: string }): JSX.Element => {
     return (
-      <View
-        style={[
-          styles.fileInfo,
-          showAgentFile[assistantId] === true && styles.uploadedFileInfo,
-        ]}>
+      <View style={[
+        styles.fileInfo,
+        showAgentFile[assistantId] === true && styles.uploadedFileInfo,
+      ]}>
         <View style={styles.fileInfoHeader}>
           <MaterialIcons
             name={showAgentFile[assistantId] === true ? 'check-circle' : 'description'}
@@ -206,24 +199,18 @@ const AllAgentCreations: React.FC = () => {
             {item.fileName}
           </Text>
         </View>
-
         <Text style={styles.fileInfoText}>Size: {item.fileSize}</Text>
         <TouchableOpacity
           onPress={() => {
             Alert.alert(
               'Delete File',
-              'Are you sure, you want to delete this file?',
+              'Are you sure you want to delete this file?',
               [
-                {
-                  text: 'Cancel',
-                  style: 'cancel',
-                },
+                { text: 'Cancel', style: 'cancel' },
                 {
                   text: 'Delete',
                   style: 'destructive',
-                  onPress: () => {
-                    removeFile(item.fileId);
-                  },
+                  onPress: () => removeFile(item.fileId),
                 },
               ]
             );
@@ -235,7 +222,6 @@ const AllAgentCreations: React.FC = () => {
     );
   };
 
-  // Filter assistants based on search query (updated to include agentName)
   const filterAssistants = (query: string): void => {
     if (!assistantsData || !assistantsData.assistants) return;
 
@@ -249,7 +235,7 @@ const AllAgentCreations: React.FC = () => {
       return (
         (assistant.userRole && assistant.userRole.toLowerCase().includes(searchLower)) ||
         (assistant.name && assistant.name.toLowerCase().includes(searchLower)) ||
-        (assistant.agentName && assistant.agentName.toLowerCase().includes(searchLower)) || // Added: Filter by agentName
+        (assistant.agentName && assistant.agentName.toLowerCase().includes(searchLower)) ||
         (assistant.headerTitle && assistant.headerTitle.toLowerCase().includes(searchLower))
       );
     });
@@ -260,7 +246,6 @@ const AllAgentCreations: React.FC = () => {
     });
   };
 
-  // Handle search input change
   const handleSearchChange = (text: string): void => {
     setSearchQuery(text);
     filterAssistants(text);
@@ -286,13 +271,16 @@ const AllAgentCreations: React.FC = () => {
   };
 
   const toggleDescription = (id: string): void => {
-    setIsDescriptionExpanded((prev) => !prev);
+    setExpandedDescription((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
   };
 
   const truncateText = (text: string, lines: number = 3): string => {
     if (!text) return '';
     const words = text.split(' ');
-    const wordsPerLine = 10; // Approximate words per line
+    const wordsPerLine = 10;
     const maxWords = lines * wordsPerLine;
     return words.length > maxWords ? words.slice(0, maxWords).join(' ') + '...' : text;
   };
@@ -326,7 +314,9 @@ const AllAgentCreations: React.FC = () => {
   const renderAssistantCard = ({ item: assistant }: { item: Assistant }): JSX.Element => {
     const statusBadge = getStatusBadge(assistant?.status, assistant.screenStatus, assistant.assistantId);
     const isExpanded = expandedInstructions[assistant.id];
+    const isDescExpanded = expandedDescription[assistant.id];
     const agentFiles = agentFile[assistant.assistantId || assistant.id] || [];
+
     return (
       <View style={styles.card}>
         {/* Card Header */}
@@ -350,44 +340,35 @@ const AllAgentCreations: React.FC = () => {
             </View>
           </View>
 
+          {/* Role and Language Row */}
           <View style={styles.rowContainer}>
             <View style={styles.leftGroup}>
-              <Text style={styles.roleText}>👤 {assistant.userRole}</Text>
-              <Text style={styles.roleText}>🌐 {assistant.language}</Text>
+              <Text style={styles.roleText}>{assistant.userRole}</Text>
+              <Text style={styles.roleText}>{assistant.language}</Text>
             </View>
-            <TouchableOpacity
-              style={styles.updatebtn}
-              onPress={() =>
-              router.push({
-                  pathname: '/(screen)/AgentCreation/agentCreation',
-                  params: { agentData: JSON.stringify(assistant) }, // Serialize if object
-                })}>
-              <Text style={styles.updateText}>
-                📝 {assistant.assistantId ? 'Update' : 'Continue'}
-              </Text>
-            </TouchableOpacity>
           </View>
+
+          {/* Use Agent Button - Always Visible */}
           <TouchableOpacity
-              style={{...styles.updatebtn, marginTop: 10,alignSelf:"flex-end"}}
-              onPress={() =>{
+            style={styles.useAgentBtn}
+            onPress={() => {
               router.push({
-                      pathname: '/userflow/GenOxyChatScreen',
-                      params: {
-                      assistantId: assistant.assistantId,
-                       query: "",
-                       category: "Assistant",
-                      agentName: assistant.agentName || "Assistant",
-                      fd: null,
-                      agentId: assistant?.id,
-                      title: assistant.agentName || "Chat with Agent",
-                    }
-                    });
-                  }
-                }>
-              <Text style={styles.updateText}>
-                 Use Agent  <Ionicons name="arrow-forward" size={13} color="#3730A3" style={{marginLeft: 5, fontWeight: '900'}} />
-              </Text>
-            </TouchableOpacity>
+                pathname: '/userflow/GenOxyChatScreen',
+                params: {
+                  assistantId: assistant.assistantId,
+                  query: "",
+                  category: "Assistant",
+                  agentName: assistant.agentName || "Assistant",
+                  fd: null,
+                  agentId: assistant?.id,
+                  title: assistant.agentName || "Chat with Agent",
+                }
+              });
+            }}>
+            <Text style={styles.useAgentText}>
+              Use Agent <Ionicons name="arrow-forward" size={13} color="#3730A3" />
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Card Body */}
@@ -395,55 +376,70 @@ const AllAgentCreations: React.FC = () => {
           {/* Key Information */}
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Status:</Text>
-              <Text style={styles.infoValue}>{assistant.agentStatus}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Active:</Text>
-              <Text
-                style={[
-                  styles.infoValue,
-                  { color: assistant.activeStatus ? '#10B981' : '#EF4444' },
-                ]}>
-                {assistant.activeStatus ? 'Yes' : 'No'}
+              <Text style={styles.infoLabel}>
+                Status:{' '}
+                <Text style={styles.infoValue}>{assistant.agentStatus}</Text>
               </Text>
             </View>
+
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Experience:</Text>
-              <Text style={styles.infoValue}>{assistant.userExperience} years</Text>
+              <Text style={styles.infoLabel}>
+                Active:{' '}
+                <Text
+                  style={[
+                    styles.infoValue,
+                    { color: assistant.activeStatus ? '#10B981' : '#EF4444' },
+                  ]}>
+                  {assistant.activeStatus ? 'Yes' : 'No'}
+                </Text>
+              </Text>
             </View>
+
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Achievements:</Text>
-              <Text style={styles.infoValue}>🏆 {assistant.acheivements}</Text>
+              <Text style={styles.infoLabel}>
+                Experience:{' '}
+                <Text style={styles.infoValue}>{assistant.userExperience} years</Text>
+              </Text>
             </View>
+
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>headerTitle:</Text>
-              <Text style={styles.infoValue}>{assistant.headerTitle}</Text>
+              <Text style={styles.infoLabel}>
+                Achievements:{' '}
+                <Text style={styles.infoValue}>{assistant.acheivements}</Text>
+              </Text>
             </View>
+
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Status:</Text>
-              <Text style={styles.infoValue}>{assistant.screenStatus}</Text>
+              <Text style={styles.infoLabel}>
+                Header Title:{' '}
+                <Text style={styles.infoValue}>{assistant.headerTitle}</Text>
+              </Text>
+            </View>
+
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>
+                Stage:{' '}
+                <Text style={styles.infoValue}>{assistant.screenStatus}</Text>
+              </Text>
             </View>
           </View>
 
           {/* Description */}
           {assistant.description && (
             <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Description</Text>
-                <TouchableOpacity
-                  onPress={() => toggleDescription(assistant.id)}
-                  style={styles.moreButton}>
-                  <Text style={styles.moreButtonText}>
-                    {isDescriptionExpanded ? 'Show Less' : 'More'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <Text style={styles.sectionTitle}>Description</Text>
               <Text style={styles.sectionText}>
-                {isDescriptionExpanded
+                {isDescExpanded
                   ? assistant.description
                   : truncateText(assistant.description, 3)}
               </Text>
+              <TouchableOpacity
+                onPress={() => toggleDescription(assistant.id)}
+                style={styles.moreButton}>
+                <Text style={styles.moreButtonText}>
+                  {isDescExpanded ? 'Show Less' : 'View More➔ '}
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -458,20 +454,18 @@ const AllAgentCreations: React.FC = () => {
           {/* Instructions */}
           {assistant.instructions && (
             <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>📋 Instructions</Text>
-                <TouchableOpacity
-                  onPress={() => toggleInstructions(assistant.id)}
-                  style={styles.moreButton}>
-                  <Text style={styles.moreButtonText}>{isExpanded ? 'Show Less' : 'More'}</Text>
-                </TouchableOpacity>
-              </View>
+              <Text style={styles.sectionTitle}>Instructions</Text>
               <Text style={styles.sectionText}>
                 {isExpanded ? assistant.instructions : truncateText(assistant.instructions, 3)}
               </Text>
+              <TouchableOpacity
+                onPress={() => toggleInstructions(assistant.id)}
+                style={styles.moreButton}>
+                <Text style={styles.moreButtonText}>{isExpanded ? '....Show Less' : 'More➔'}</Text>
+              </TouchableOpacity>
             </View>
           )}
-
+  
           {/* Timestamps */}
           <View style={styles.timestampContainer}>
             <View style={styles.timestampRow}>
@@ -483,11 +477,12 @@ const AllAgentCreations: React.FC = () => {
               <Text style={styles.timestampValue}>{formatDate(assistant.updatedAt)}</Text>
             </View>
           </View>
+
           {assistant.assistantId && (
             <View style={styles.actionHintContainer}>
               <TouchableOpacity style={styles.actionHint} onPress={() => toggleAgentStatus(assistant)}>
                 <Text style={styles.actionText}>
-                  Tap to {assistant.activeStatus ? 'Deactivate' : 'Activate'}
+                  {assistant.activeStatus ? 'Deactivate' : 'Activate'}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -541,7 +536,7 @@ const AllAgentCreations: React.FC = () => {
     <View style={styles.searchContainer}>
       <TextInput
         style={styles.searchInput}
-        placeholder="Search by role, agent name, user name, or title..." // Updated placeholder to include agent name
+        placeholder="Search by role, agent name, user name, or title..."
         placeholderTextColor="#94A3B8"
         value={searchQuery}
         onChangeText={handleSearchChange}
@@ -561,6 +556,21 @@ const AllAgentCreations: React.FC = () => {
     </View>
   );
 
+  const renderFooter = (): JSX.Element | null => {
+    if (!filteredData?.assistants || filteredData.assistants.length === 0) {
+      return null;
+    }
+    
+    return (
+      <View style={styles.footerContainer}>
+        <View style={styles.footerDivider} />
+        <Text style={styles.footerText}>
+          You've reached the end • {filteredData.assistants.length} agent{filteredData.assistants.length !== 1 ? 's' : ''} total
+        </Text>
+      </View>
+    );
+  };
+
   const keyExtractor = (item: Assistant): string => item.id?.toString() || Math.random().toString();
 
   if (loading) {
@@ -576,11 +586,8 @@ const AllAgentCreations: React.FC = () => {
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.createBtn}
-        onPress={() => 
-        // router.push('/(screen)/AgentCreation/AIRole')
-        router.push('/NewAgentCreation/AgentCreationScreen')
-        }>
-        <Text style={{ color: 'white' }}>Create agent</Text>
+        onPress={() => router.push('/(screen)/NewAgentCreation/AgentCreationScreen')}>
+        <Text style={styles.createBtnText}>Create Agent</Text>
       </TouchableOpacity>
       {renderSearchBar()}
       <FlatList<Assistant>
@@ -589,6 +596,7 @@ const AllAgentCreations: React.FC = () => {
         keyExtractor={keyExtractor}
         ListHeaderComponent={(filteredData?.assistants?.length ?? 0) > 0 ? renderHeader : null}
         ListEmptyComponent={renderEmpty}
+        ListFooterComponent={renderFooter}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -599,15 +607,10 @@ const AllAgentCreations: React.FC = () => {
         }
         contentContainerStyle={styles.flatListContent}
         showsVerticalScrollIndicator={false}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={10}
+        initialNumToRender={5}
+        maxToRenderPerBatch={5}
+        windowSize={5}
         removeClippedSubviews={true}
-        getItemLayout={(data: ArrayLike<Assistant> | null | undefined, index: number) => ({
-          length: 400, // Approximate height of each card
-          offset: 400 * index,
-          index,
-        })}
       />
     </View>
   );
@@ -619,26 +622,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-    marginBottom:60
   },
   flatListContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingHorizontal: 12,
+    paddingBottom: 80,
+    flexGrow: 1,
   },
   searchContainer: {
-    padding: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     backgroundColor: '#F8FAFC',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   searchInput: {
     backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    fontSize: 16,
+    fontSize: 15,
   },
   loadingContainer: {
     flex: 1,
@@ -647,39 +649,47 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
+    marginTop: 12,
+    fontSize: 15,
     color: '#6B7280',
   },
   createBtn: {
-    padding: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     backgroundColor: '#6366F1',
-    margin: 10,
-    borderRadius: 5,
+    marginHorizontal: 12,
+    marginTop: 10,
+    marginBottom: 4,
+    borderRadius: 6,
     alignItems: 'center',
     alignSelf: 'flex-end',
   },
+  createBtnText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   header: {
-    padding: 20,
-    paddingTop: 20,
-    paddingHorizontal: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 2,
   },
   headerCount: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#9CA3AF',
+    fontWeight: '500',
   },
   card: {
     backgroundColor: 'white',
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: 10,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   cardHeader: {
-    padding: 20,
+    padding: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
@@ -687,7 +697,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   avatarContainer: {
     flexDirection: 'row',
@@ -695,267 +705,256 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatar: {
-    width: width * 0.85,
+    width: width * 0.88,
     height: 100,
-    borderRadius: 12,
+    borderRadius: 8,
     backgroundColor: '#6366F1',
-    // justifyContent: "center",
-    // alignItems: "center",
     marginBottom: 10,
-  },
-  avatarImage: {
-    width: width * 0.85,
-    height: 100,
-    borderRadius: 12,
-  },
-  avatarText: {
-    color: 'white',
-    fontSize: 36,
-    fontWeight: 'bold',
   },
   nameContainer: {
     flex: 1,
   },
   agentName: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: '#111827',
   },
   userName: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
     marginTop: 2,
   },
   publishedBadge: {
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   publishedBadgeText: {
     color: '#166534',
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 11,
+    fontWeight: '600',
   },
   draftBadge: {
     backgroundColor: '#FEF3C7',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   draftBadgeText: {
     color: '#92400E',
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 11,
+    fontWeight: '600',
   },
   rowContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 8,
   },
   leftGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
-    width: width * 0.4,
+    gap: 8,
+    flex: 1,
   },
-  updatebtn: {
+  roleText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  updateBtn: {
     backgroundColor: '#E0E7FF',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20,
-    width: width * 0.25,
+    borderRadius: 12,
+    minWidth: 90,
   },
   updateText: {
     color: '#3730A3',
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
     textAlign: 'center',
   },
-  roleText: {
-    fontSize: 14,
-    color: '#6B7280',
-    width: width * 0.4,
+  useAgentBtn: {
+    backgroundColor: '#E0E7FF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    alignSelf: 'flex-end',
+    minWidth: 110,
+  },
+  useAgentText: {
+    color: '#3730A3',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   cardBody: {
-    padding: 20,
+    padding: 14,
   },
   infoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   infoItem: {
     width: '50%',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   infoLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
     marginBottom: 2,
   },
   infoValue: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: '#111827',
   },
   section: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#111827',
   },
   sectionText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
-    lineHeight: 20,
+    lineHeight: 19,
   },
   moreButton: {
-    paddingHorizontal: 8,
     paddingVertical: 4,
+    alignSelf: 'flex-start',
+    marginTop: 4,
   },
   moreButtonText: {
-    color: '#6366F1',
+    color: '#204593ff',
     fontSize: 12,
     fontWeight: '500',
   },
   timestampContainer: {
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
-    paddingTop: 16,
-    marginTop: 16,
-    marginBottom: 16,
+    paddingTop: 12,
+    marginTop: 12,
+    marginBottom: 12,
   },
   timestampRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   timestampLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6B7280',
   },
   timestampValue: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6B7280',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: height * 0.3,
+    paddingTop: height * 0.25,
+    paddingHorizontal: 20,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
   },
+  footerContainer: {
+    paddingVertical: 24,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  footerDivider: {
+    height: 1,
+    width: '60%',
+    backgroundColor: '#E5E7EB',
+    marginBottom: 12,
+  },
+  footerText: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
   actionHintContainer: {
     flexDirection: 'row',
-    // alignSelf:"flex-end",
     justifyContent: 'space-between',
+    gap: 8,
   },
   actionHint: {
     backgroundColor: '#6366F1',
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    width: 150,
-    alignSelf: 'flex-end',
+    paddingVertical: 8,
+    borderRadius: 6,
+    flex: 1,
+    alignItems: 'center',
   },
   actionText: {
     color: '#fff',
-    fontSize: 15,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  uploadButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  uploadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    flex: 1,
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  uploadButtonText: {
-    fontSize: 14,
-    color: '#3b82f6',
+    fontSize: 13,
     fontWeight: '600',
-    marginLeft: 8,
   },
   uploadSection: {
-    marginTop: 20,
-    paddingTop: 20,
+    marginTop: 14,
+    paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
     backgroundColor: '#f8fafc',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 10,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
   uploadSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   uploadSectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#0f172a',
-    marginLeft: 8,
+    marginLeft: 6,
   },
   fileInfo: {
     backgroundColor: '#e9ecef',
     padding: 10,
-    borderRadius: 12,
-    marginVertical: 15,
-    width: width * 0.4,
-    height: 100,
-    // maxWidth: 320,
-    borderLeftWidth: 4,
+    borderRadius: 8,
+    marginVertical: 6,
+    width: width * 0.42,
+    minHeight: 90,
+    borderLeftWidth: 3,
     borderLeftColor: '#007bff',
-    marginRight: 15,
-    marginTop: 10,
+    marginRight: 10,
   },
   fileInfoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    marginTop: 15,
+    marginBottom: 6,
   },
   fileName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#495057',
-    marginLeft: 8,
+    marginLeft: 6,
     flex: 1,
   },
   uploadedFileName: {
@@ -966,23 +965,19 @@ const styles = StyleSheet.create({
     borderLeftColor: '#28a745',
   },
   fileInfoText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6c757d',
     marginVertical: 2,
   },
   fileContainer: {
-    width: width * 0.85,
-    height: 100,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-    marginTop: 20,
+    width: width * 0.88,
+    minHeight: 90,
+    borderRadius: 8,
+    marginTop: 12,
   },
   deleteButton: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    bottom: 2,
+    top: 8,
+    right: 8,
   },
 });

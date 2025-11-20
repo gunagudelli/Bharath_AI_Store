@@ -1,4 +1,4 @@
-// AgentPreviewScreen.tsx
+// AgentPreviewScreen.tsx - FIXED VERSION
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -7,7 +7,9 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -33,20 +35,6 @@ interface AgentData {
   purposeOther: string;
   view: string;
 }
-
-type AddFileType = 'STUDENT' | 'EMPLOYEE' | 'BUSINESS' | 'OTHER';
-
-interface FileUploadOption {
-  label: string;
-  value: AddFileType;
-}
-
-const FILE_UPLOAD_OPTIONS: FileUploadOption[] = [
-  { label: 'STUDENT', value: 'STUDENT' },
-  { label: 'EMPLOYEE', value: 'EMPLOYEE' },
-  { label: 'BUSINESS', value: 'BUSINESS' },
-  { label: 'OTHER', value: 'OTHER' },
-];
 
 const AgentPreviewScreen: React.FC = () => {
   const userData = useSelector((state: RootState) => state.userData);
@@ -100,11 +88,10 @@ const AgentPreviewScreen: React.FC = () => {
   
   const [editModalOpen, setEditModalOpen] = useState<boolean>(false);
   const [editDraft, setEditDraft] = useState<string>('');
-  const [instrCollapsed, setInstrCollapsed] = useState<boolean>(false);
+  const [instrCollapsed, setInstrCollapsed] = useState<boolean>(true); // Start with collapsed/hidden
 
   // File upload state
   const [uploadModalOpen, setUploadModalOpen] = useState<boolean>(false);
-  const [uploadRole, setUploadRole] = useState<AddFileType | ''>('');
   const [selectedFiles, setSelectedFiles] = useState<DocumentPicker.DocumentPickerAsset[]>([]);
   const [uploading, setUploading] = useState<boolean>(false);
   const [assistanceId, setAssistanceId] = useState<string>('');
@@ -219,7 +206,6 @@ const AgentPreviewScreen: React.FC = () => {
       return;
     }
 
-    // Scroll to instructions section when generation starts
     scrollToInstructions();
     
     setGenLoading(true);
@@ -255,7 +241,6 @@ const AgentPreviewScreen: React.FC = () => {
       instructionsGeneratedRef.current = true;
       console.log('Instructions generated successfully');
       
-      // Scroll to publish button after instructions are generated
       scrollToPublishButton();
     } catch (error: any) {
       console.error('Generate instructions error:', error);
@@ -357,11 +342,6 @@ const AgentPreviewScreen: React.FC = () => {
 
   // Upload files
   const uploadFiles = async (): Promise<void> => {
-    if (!uploadRole) {
-      Alert.alert('Error', 'Please select a role for the user');
-      return;
-    }
-
     if (selectedFiles.length === 0) {
       Alert.alert('Error', 'Please select at least one file');
       return;
@@ -372,6 +352,11 @@ const AgentPreviewScreen: React.FC = () => {
 
     if (!token) {
       Alert.alert('Error', 'Authentication token not found');
+      return;
+    }
+
+    if (!roleResolved) {
+      Alert.alert('Error', 'Role information not found');
       return;
     }
 
@@ -389,9 +374,10 @@ const AgentPreviewScreen: React.FC = () => {
           name: file.name,
         });
 
-        const url = `${baseUrl}/ai-service/agent/${encodeURIComponent(assistanceId)}/addAgentFiles?addFileType=${encodeURIComponent(uploadRole)}&userId=${encodeURIComponent(userId)}`;
+        const url = `${baseUrl}/ai-service/agent/${encodeURIComponent(assistanceId)}/addAgentFiles?addFileType=${encodeURIComponent(roleResolved)}&userId=${encodeURIComponent(userId)}`;
 
-        console.log('Uploading file:', file.name, 'to:', url);
+        console.log('Uploading file:', file.name, 'with role:', roleResolved);
+        console.log('Upload URL:', url);
 
         const response = await fetch(url, {
           method: 'POST',
@@ -418,7 +404,7 @@ const AgentPreviewScreen: React.FC = () => {
             onPress: () => {
               setUploadModalOpen(false);
               router.push({
-                pathname: "/userflow/MyAgent",
+                pathname: "/(screen)/AgentCreation/agentCreation",
               }); 
             }
           }
@@ -500,9 +486,7 @@ const AgentPreviewScreen: React.FC = () => {
       if (newAssistanceId) {
         setAssistanceId(newAssistanceId);
         console.log('Assistant ID:', newAssistanceId);
-        console.log('');
         
-        setUploadRole('');
         setSelectedFiles([]);
         setUploadModalOpen(true);
       } else {
@@ -527,14 +511,12 @@ const AgentPreviewScreen: React.FC = () => {
     
     const autoGenerate = async () => { 
       try {
-        // Generate starters first
         if (!conStarter1.trim() && !conStarter2.trim() && !startersGeneratedRef.current) {
           console.log('Auto-generating conversation starters...');
           await generateStarters();
           console.log('Conversation starters generation completed');
         }
         
-        // Then generate instructions and scroll to it
         if (!instructions.trim() && !instructionsGeneratedRef.current) {
           console.log('Auto-generating instructions...');
           await generateInstructions();
@@ -565,6 +547,10 @@ const AgentPreviewScreen: React.FC = () => {
     Alert.alert('Success', 'Instructions updated successfully!');
   };
 
+  const toggleInstructionsCollapse = (): void => {
+    setInstrCollapsed(!instrCollapsed);
+  };
+
   if (!agentData) {
     return (
       <SafeAreaView style={[styles.container, styles.centerContent]}>
@@ -581,6 +567,7 @@ const AgentPreviewScreen: React.FC = () => {
         style={styles.scrollView} 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Header Card */}
         <View style={styles.headerCard}>
@@ -691,10 +678,10 @@ const AgentPreviewScreen: React.FC = () => {
             <View style={styles.instructionButtons}>
               <TouchableOpacity
                 style={styles.actionBtn}
-                onPress={() => setInstrCollapsed(!instrCollapsed)}
+                onPress={toggleInstructionsCollapse}
               >
                 <Text style={styles.actionBtnText}>
-                  {instrCollapsed ? 'Show' : 'Hide'}
+                  {instrCollapsed ? '👁️ Show' : '🙈 Hide'}
                 </Text>
               </TouchableOpacity>
 
@@ -706,7 +693,7 @@ const AgentPreviewScreen: React.FC = () => {
                 }}
                 disabled={!instructions.trim()}
               >
-                <Text style={styles.actionBtnText}>Edit</Text>
+                <Text style={[styles.actionBtnText, styles.actionBtnEditText]}>Edit</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -733,23 +720,44 @@ const AgentPreviewScreen: React.FC = () => {
             </View>
           )}
 
-          {!instrCollapsed && (
-            <View style={styles.instructionsBox}>
-              {genLoading ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#6D28D9" />
-                  <Text style={styles.loadingText}>Creating detailed instructions...</Text>
-                  <Text style={styles.loadingSubtext}>This may take a few moments</Text>
-                </View>
-              ) : (
-                <ScrollView style={styles.instructionsScroll} nestedScrollEnabled>
-                  <Text style={styles.instructionsText}>
-                    {instructions || 'Instructions will appear here after generation.'}
-                  </Text>
-                </ScrollView>
-              )}
-            </View>
-          )}
+          <View style={styles.instructionsBox}>
+            {genLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#6D28D9" />
+                <Text style={styles.loadingText}>Creating detailed instructions...</Text>
+                <Text style={styles.loadingSubtext}>This may take a few moments</Text>
+              </View>
+            ) : (
+              <>
+                {instrCollapsed ? (
+                  <View>
+                    <Text style={styles.instructionsText}>
+                      {instructions.slice(0, 300) || 'Instructions will appear here after generation.'}
+                      {instructions.length > 300 && '...'}
+                    </Text>
+                    {instructions.length > 300 && (
+                      <TouchableOpacity 
+                        style={styles.viewMoreButton}
+                        onPress={() => setInstrCollapsed(false)}
+                      >
+                        <Text style={styles.viewMoreText}>View More →</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ) : (
+                  <ScrollView 
+                    style={styles.instructionsScroll} 
+                    nestedScrollEnabled={true}
+                    showsVerticalScrollIndicator={true}
+                  >
+                    <Text style={styles.instructionsText}>
+                      {instructions || 'Instructions will appear here after generation.'}
+                    </Text>
+                  </ScrollView>
+                )}
+              </>
+            )}
+          </View>
         </View>
 
         {/* Publish Button */}
@@ -788,14 +796,18 @@ const AgentPreviewScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* Edit Instructions Modal */}
+      {/* Edit Instructions Modal - FIXED */}
       <Modal
         visible={editModalOpen}
         animationType="slide"
         transparent={true}
         onRequestClose={() => setEditModalOpen(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Instructions</Text>
@@ -806,16 +818,23 @@ const AgentPreviewScreen: React.FC = () => {
             
             <Text style={styles.modalSubtitle}>Max 7000 characters</Text>
             
-            <TextInput
-              style={styles.modalTextArea}
-              value={editDraft}
-              onChangeText={(text) => setEditDraft(text.slice(0, 7000))}
-              multiline
-              textAlignVertical="top"
-              maxLength={7000}
-              placeholder="Enter instructions..."
-              placeholderTextColor="#94A3B8"
-            />
+            <ScrollView 
+              style={styles.modalScrollContainer}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={true}
+            >
+              <TextInput
+                style={styles.modalTextArea}
+                value={editDraft}
+                onChangeText={(text) => setEditDraft(text.slice(0, 7000))}
+                multiline
+                textAlignVertical="top"
+                maxLength={7000}
+                placeholder="Enter instructions..."
+                placeholderTextColor="#94A3B8"
+                autoFocus={false}
+              />
+            </ScrollView>
             
             <Text style={styles.charCounter}>{editDraft.length}/7000</Text>
             
@@ -834,10 +853,11 @@ const AgentPreviewScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
-      {/* File Upload Modal */}
+      {/* File Upload Modal - FIXED */}
+      {/* File Upload Modal - FIXED */}
       <Modal
         visible={uploadModalOpen}
         animationType="slide"
@@ -846,46 +866,39 @@ const AgentPreviewScreen: React.FC = () => {
           Alert.alert('Upload Required', 'Please upload files to complete agent creation');
         }}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.uploadModalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Upload Documents</Text>
+              <Text style={styles.modalTitle}>Upload Profile Documents</Text>
             </View>
 
-            <ScrollView style={styles.uploadScrollView} nestedScrollEnabled>
-              {/* Role Selection */}
+            <ScrollView 
+              style={styles.uploadScrollView} 
+              nestedScrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={true}
+            >
+              {/* Role Display */}
               <View style={styles.uploadSection}>
-                <Text style={styles.uploadLabel}>Select User Role *</Text>
-                <View style={styles.roleGrid}>
-                  {FILE_UPLOAD_OPTIONS.map((option) => (
-                    <TouchableOpacity
-                      key={option.value}
-                      style={[
-                        styles.roleButton,
-                        uploadRole === option.value && styles.roleButtonSelected
-                      ]}
-                      onPress={() => setUploadRole(option.value)}
-                    >
-                      <Text style={[
-                        styles.roleButtonText,
-                        uploadRole === option.value && styles.roleButtonTextSelected
-                      ]}>
-                        {option.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                <Text style={styles.uploadLabel}>Your Role Profile</Text>
+                <View style={styles.roleDisplayBox}>
+                  <Text style={styles.roleDisplayText}>👤 {roleResolved}</Text>
                 </View>
+                <Text style={styles.uploadHintSmall}>
+                  This is the role you selected during agent creation
+                </Text>
               </View>
 
               {/* File Selection */}
               <View style={styles.uploadSection}>
-                <Text style={styles.uploadLabel}>Choose Files *</Text>
+                <Text style={styles.uploadLabel}>Upload Supporting Documents *</Text>
 
-                {/* Instruction text */}
                 <Text style={styles.uploadInstruction}>
-                  If you are a student, upload your ID card or other proof.  
-                  If you are an employee, upload your employee ID.  
-                  If you are a business, upload your business proof.
+                  Please upload documents that verify your role as a <Text style={styles.boldText}>{roleResolved}</Text>.
+                  {'\n\n'}Examples: ID card, employee badge, business registration, professional certificate, etc.
                 </Text>
 
                 <TouchableOpacity
@@ -900,7 +913,10 @@ const AgentPreviewScreen: React.FC = () => {
                 </TouchableOpacity>
 
                 {selectedFiles.length > 0 && (
-                  <View style={styles.filesList}>
+                  <ScrollView 
+                    style={styles.filesList}
+                    nestedScrollEnabled={true}
+                  >
                     {selectedFiles.map((file, index) => (
                       <View key={index} style={styles.fileItem}>
                         <Text style={styles.fileName} numberOfLines={1}>
@@ -915,7 +931,7 @@ const AgentPreviewScreen: React.FC = () => {
                         </TouchableOpacity>
                       </View>
                     ))}
-                  </View>
+                  </ScrollView>
                 )}
 
                 <Text style={styles.uploadHint}>
@@ -929,10 +945,10 @@ const AgentPreviewScreen: React.FC = () => {
               <TouchableOpacity
                 style={[
                   styles.uploadButton,
-                  (!uploadRole || selectedFiles.length === 0 || uploading) && styles.buttonDisabled
+                  (selectedFiles.length === 0 || uploading) && styles.buttonDisabled
                 ]}
                 onPress={uploadFiles}
-                disabled={!uploadRole || selectedFiles.length === 0 || uploading}
+                disabled={selectedFiles.length === 0 || uploading}
               >
                 {uploading ? (
                   <View style={styles.uploadingRow}>
@@ -940,12 +956,12 @@ const AgentPreviewScreen: React.FC = () => {
                     <Text style={styles.uploadButtonText}>Uploading...</Text>
                   </View>
                 ) : (
-                  <Text style={styles.uploadButtonText}>Upload Files</Text>
+                  <Text style={styles.uploadButtonText}>Upload Files & Complete</Text>
                 )}
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -1171,12 +1187,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   actionBtnEdit: {
-    backgroundColor: '#9CA3AF',
-    borderColor: '#9CA3AF',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E7E6F3',
+    borderWidth: 1.5,
   },
   actionBtnText: {
     fontSize: 12,
     fontWeight: '700',
+    color: '#111827',
+  },
+  actionBtnEditText: {
     color: '#111827',
   },
   instructionsBox: {
@@ -1186,6 +1206,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     minHeight: 150,
+    maxHeight: 400,
     marginTop: 8,
   },
   loadingContainer: {
@@ -1205,12 +1226,27 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   instructionsScroll: {
-    maxHeight: 300,
+    maxHeight: 350,
   },
   instructionsText: {
     fontSize: 14,
     color: '#374151',
     lineHeight: 21,
+  },
+  viewMoreButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: '#F3E8FF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E7E6F3',
+  },
+  viewMoreText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#6D28D9',
   },
 
   // Actions
@@ -1259,7 +1295,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 
-  // Modal Styles
+  // Modal Styles - FIXED
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1270,7 +1306,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    maxHeight: '85%',
+    maxHeight: '90%',
+    minHeight: '60%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1293,17 +1330,20 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginBottom: 12,
   },
+  modalScrollContainer: {
+    flex: 1,
+    marginBottom: 12,
+  },
   modalTextArea: {
     backgroundColor: '#F9FAFB',
     borderWidth: 1,
     borderColor: '#E7E6F3',
     borderRadius: 12,
-    padding: 12,
+    padding: 16,
     fontSize: 14,
     color: '#111827',
-    minHeight: 200,
+    minHeight: 300,
     textAlignVertical: 'top',
-    marginBottom: 8,
   },
   charCounter: {
     fontSize: 12,
@@ -1342,16 +1382,18 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
-  // Upload Modal
+  // Upload Modal - FIXED
   uploadModalContent: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    maxHeight: '85%',
+    maxHeight: '90%',
+    minHeight: '60%',
   },
   uploadScrollView: {
-    maxHeight: 500,
+    flex: 1,
+    marginBottom: 16,
   },
   uploadSection: {
     marginBottom: 20,
@@ -1362,33 +1404,25 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 10,
   },
-  roleGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  roleButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E7E6F3',
-    backgroundColor: '#FFFFFF',
-    minWidth: '45%',
-    alignItems: 'center',
-  },
-  roleButtonSelected: {
-    borderColor: '#6D28D9',
+  roleDisplayBox: {
     backgroundColor: '#F3E8FF',
+    borderWidth: 2,
+    borderColor: '#6D28D9',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  roleButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  roleButtonTextSelected: {
+  roleDisplayText: {
+    fontSize: 16,
+    fontWeight: '700',
     color: '#6D28D9',
-    fontWeight: '800',
+  },
+  uploadHintSmall: {
+    fontSize: 12,
+    color: '#64748B',
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
   pickFilesButton: {
     padding: 14,
@@ -1477,8 +1511,12 @@ const styles = StyleSheet.create({
   uploadInstruction: {
     fontSize: 13,
     color: "#475569",
-    marginBottom: 8,
-    lineHeight: 18,
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  boldText: {
+    fontWeight: '700',
+    color: '#6D28D9',
   },
 });
 

@@ -1,4 +1,3 @@
-// app/(auth)/otp.tsx - Enhanced OTP Verification Screen with Proper Resend
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState, useRef, useEffect } from 'react';
 import {

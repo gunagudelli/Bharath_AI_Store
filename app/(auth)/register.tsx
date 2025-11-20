@@ -1,22 +1,22 @@
 // app/(auth)/register.tsx - Enhanced Register Screen with same UI as Login
+import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
 import { useRouter } from 'expo-router';
-import React, { useState, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
+  Animated,
   Dimensions,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  StatusBar,
-  ActivityIndicator,
-  Animated,
 } from 'react-native';
 import PhoneInput from 'react-native-phone-number-input';
-import axios from 'axios';
 import BASE_URL from '../../config';
-import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -97,14 +97,39 @@ const RegisterScreen: React.FC = () => {
           expiryTime: response.data.otpGeneratedTime
         },
       });
-    } catch (err: any) {
-      console.log('Error sending OTP:', err.response || err);
-      const errorMessage = err.response?.data?.error || 'Failed to send OTP. Try again.';
-      setError(errorMessage);
-      Alert.alert('Error', errorMessage);
-    } finally {
-      setLoading(false);
-    }
+   } catch (err: any) {
+  console.log("Error response:", err.response?.data);
+
+  // Extract correct message from backend
+  const errorMessage =
+    err.response?.data?.error ||
+    err.response?.data?.message ||
+    err.message ||
+    "Failed to send OTP";
+
+  // Convert message to lowercase for easy checking
+  const msg = errorMessage.toLowerCase();
+
+  if (err.response?.status === 409 || msg.includes("already")) {
+    // 🚨 User already registered
+    Alert.alert(
+      "Already Registered",
+      "You already have an account. Please log in to continue.",
+      [
+        {
+          text: "Go to Login",
+          onPress: () => router.push("/(auth)/login"),
+        },
+      ]
+    );
+  } else {
+    // ❌ Any other unknown error
+    Alert.alert("Error", errorMessage || "Failed to send OTP");
+  }
+
+  setLoading(false);
+}
+
   };
 
   return (
