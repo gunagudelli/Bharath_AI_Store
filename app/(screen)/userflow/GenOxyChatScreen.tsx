@@ -8,8 +8,6 @@ import {
   StatusBar,
   Keyboard,
   Alert,
-  Share,
-  Clipboard,
   Dimensions,
   Linking,
   Platform,
@@ -18,6 +16,8 @@ import {
   KeyboardAvoidingView,
   KeyboardEventName,
 } from "react-native";
+import { Share } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import * as Speech from "expo-speech";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
@@ -28,6 +28,7 @@ import { RootState } from "../../Redux/types";
 import { useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ChatHistoryDrawer from "./ChatHistoryDrawer";
+import { useNavigation } from "@react-navigation/native";
 import { log } from "console";
 // import { useSelector } from "react-redux";
 
@@ -72,6 +73,7 @@ interface ParsedMessage {
 }
 
 const GenOxyChatScreen: React.FC<Props> = () => {
+  const navigation = useNavigation();
   const { query, category, assistantId, agentName, fd, agentId } = useLocalSearchParams<{query?: string, category?: string, assistantId: string, agentName: string, fd?: any, agentId: string}>();
   const flatListRef = useRef<FlatList>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -87,16 +89,37 @@ const GenOxyChatScreen: React.FC<Props> = () => {
 
    const [openHistory, setOpenHistory] = useState(false);
 
-  const handleContinue = (parsedMessages: any[],message: any[]) => {
-     console.log("Continuing with parsed messages:", message);
-    // Convert ParsedMessage[] to Message[] and restore full thread
-    const messages: Message[] = parsedMessages.map((msg, index) => ({
-      role: (msg.role || "assistant") as "user" | "assistant",
-      content: msg.content || "",
-      id: Date.now() + index,
-    }));
+  // Set navigation header with history button
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => setOpenHistory(true)}
+          style={{ marginRight: 15, padding: 8 }}
+        >
+          <Ionicons name="time-outline" size={24} color="#000" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+
+  const handleContinue = (parsedMessages: any[], meta?: { rawPrompt?: any; item?: any }) => {
+    console.log("Raw message data:", meta?.rawPrompt);
+    console.log("Parsed data:", parsedMessages);
     
-    setMessages(messages);
+    // Use rawPrompt from meta which contains complete conversation
+    const messagesToUse = Array.isArray(meta?.rawPrompt) ? meta.rawPrompt : 
+                         Array.isArray(parsedMessages) ? parsedMessages : [];
+    
+    if (messagesToUse.length > 0) {
+      const allMessages: Message[] = messagesToUse.map((msg, index) => ({
+        role: (msg.role || "assistant") as "user" | "assistant",
+        content: msg.content || "",
+        id: Date.now() + index,
+      }));
+      
+      setMessages(allMessages);
+    }
   };
 
   const handleStartNewThread = (parsedMessages: any[]) => {
@@ -130,7 +153,7 @@ const GenOxyChatScreen: React.FC<Props> = () => {
           timeout: 10000,
         });
 
-        console.log("Helper questions response:", response.data[0]);
+        // console.log("Helper questions response:", response.data[0]);
 
         // Extract conversation starters from response
         const data = response.data[0] || {};
@@ -357,7 +380,7 @@ const GenOxyChatScreen: React.FC<Props> = () => {
   // Copy message
   const copyMessage = async (message: Message): Promise<void> => {
     try {
-      await Clipboard.setString(message.content);
+      await Clipboard.setStringAsync(message.content);
       Alert.alert("Copied!", "Message copied to clipboard");
     } catch {
       Alert.alert("Error", "Copy failed");
@@ -494,16 +517,6 @@ const GenOxyChatScreen: React.FC<Props> = () => {
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 50}
     >
       <StatusBar barStyle="dark-content" backgroundColor="#f4f4f5" />
-      {/* <View style={styles.header}>
-          <Text style={styles.headerTitle}>Oxy.AI</Text>
-
-          <TouchableOpacity
-            onPress={() => setOpenHistory(true)}
-            style={{ padding: 6 }}
-          >
-            <Ionicons name="time-outline" size={24} color="#111" />
-          </TouchableOpacity>
-        </View> */}
 
       {/* Chat and Helper Questions */}
       <View style={styles.chatContainer}>
@@ -543,14 +556,16 @@ const GenOxyChatScreen: React.FC<Props> = () => {
         //   loading={loading}
         />
       </View>
-      {/* <ChatHistoryDrawer
+      <ChatHistoryDrawer
+        agentId={agentId}
+        userId={userId}
         visible={openHistory}
         onClose={() => setOpenHistory(false)}
         onContinueChat={handleContinue}
         onStartNewThread={handleStartNewThread}
         token={token}
         widthPercent={0.86}
-      /> */}
+      />
 
     </KeyboardAvoidingView>
   );
@@ -685,6 +700,13 @@ const styles = StyleSheet.create({
   },
   helperText: {
     fontSize: 14,
+    color: "#374151",
+    textAlign: "center",
+    fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
+  },
+
+  emptyText: {
+    fontSize: 14,
     color: "#1f2937",
     textAlign: "center",
     fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
@@ -706,22 +728,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#d1d5db",
   },
-  header: {
-    height: 50,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    backgroundColor: "#f4f4f5",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",    
-    color: "#1f2937",
-    fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
-  },
+
 });
 
 // Markdown styles
