@@ -15,12 +15,13 @@ export const getAgentConfig = (): AgentConfig => {
     agentId: extra?.agentId || null,
     agentName: extra?.agentName || null,
     buildId: extra?.buildId || null,
-    isSingleAgent: !!extra?.isSingleAgent
+    isSingleAgent: !!extra?.singleAgent
   };
 };
 
 export const isSingleAgentMode = (): boolean => {
-  return getAgentConfig().isSingleAgent;
+  const { singleAgent } = Constants.expoConfig?.extra || {};
+  return !!singleAgent;
 };
 
 export const getSingleAgentId = (): string | null => {

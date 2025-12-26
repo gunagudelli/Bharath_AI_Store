@@ -1,15 +1,16 @@
 // app.config.js - Dynamic configuration for agent-specific APKs
 export default ({ config }) => {
-  // Get agent info from environment variables (set by GitHub Actions)
-  const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
-  const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
-  const buildId = process.env.EXPO_PUBLIC_BUILD_ID;
+  const isSingleAgent =
+    !!process.env.EXPO_PUBLIC_AGENT_ID &&
+    !!process.env.EXPO_PUBLIC_AGENT_NAME;
 
-  // Base configuration
-  let appConfig = {
+  return {
     ...config,
-    name: agentName ? `${agentName} AI` : "Bharath AI Store",
-    slug: agentId ? `bharath-ai-${agentId.toLowerCase().replace(/[^a-z0-9]/g, '')}` : "bharath-ai-store",
+    name: isSingleAgent
+      ? process.env.EXPO_PUBLIC_AGENT_NAME
+      : "Bharath AI Store",
+    slug: "bharath-ai-agent",
+    owner: "guna123",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -22,9 +23,9 @@ export default ({ config }) => {
     assetBundlePatterns: ["**/*"],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: agentId 
-        ? `com.bharathai.${agentId.toLowerCase().replace(/[^a-z0-9]/g, '')}` 
-        : "com.bharathai.store"
+      bundleIdentifier: isSingleAgent
+        ? "com.bharath.agent"
+        : "com.bharath.store"
     },
     android: {
       adaptiveIcon: {
@@ -32,9 +33,9 @@ export default ({ config }) => {
         backgroundImage: "./assets/images/android-icon-background.png",
         monochromeImage: "./assets/images/android-icon-monochrome.png"
       },
-      package: agentId 
-        ? `com.bharathai.${agentId.toLowerCase().replace(/[^a-z0-9]/g, '')}` 
-        : "com.bharathai.store"
+      package: isSingleAgent
+        ? "com.bharath.agent"
+        : "com.bharath.store"
     },
     web: {
       favicon: "./assets/images/favicon.png",
@@ -59,30 +60,16 @@ export default ({ config }) => {
       typedRoutes: true
     },
     extra: {
-      // 🔥 Agent-specific configuration
-      agentId: agentId || null,
-      agentName: agentName || null,
-      buildId: buildId || null,
-      isSingleAgent: !!agentId, // Flag to enable single-agent mode
+      singleAgent: isSingleAgent,
+      agentId: process.env.EXPO_PUBLIC_AGENT_ID || null,
+      agentName: process.env.EXPO_PUBLIC_AGENT_NAME || null,
+      buildId: process.env.EXPO_PUBLIC_BUILD_ID || null,
       router: {
         origin: false
       },
       eas: {
-        projectId: "your-project-id" // Replace with your actual EAS project ID
+        projectId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
       }
     }
   };
-
-  // Debug logging
-  console.log('🔧 App Config Debug:', {
-    name: appConfig.name,
-    slug: appConfig.slug,
-    agentId: agentId,
-    agentName: agentName,
-    buildId: buildId,
-    isSingleAgent: !!agentId,
-    bundleId: appConfig.android.package
-  });
-
-  return appConfig;
 };

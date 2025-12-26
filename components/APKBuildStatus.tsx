@@ -59,7 +59,14 @@ const APKBuildStatus: React.FC<APKBuildStatusProps> = ({
 
   const fetchBuildStatus = async () => {
     try {
-      const response = await axios.get(`${APK_BASE_URL}/build-status/${buildId}`);
+      console.log(`🔍 Fetching build status for: ${buildId}`);
+      const response = await axios.get(`${APK_BASE_URL}build-status/${buildId}`, {
+        timeout: 10000,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (response.data.success) {
         const build = response.data.build;
@@ -78,8 +85,13 @@ const APKBuildStatus: React.FC<APKBuildStatusProps> = ({
         console.error('Build status fetch failed:', response.data);
       }
     } catch (error) {
-      console.error('Error fetching build status:', error);
-      setPolling(false);
+      console.error('Error fetching build status:', error.message);
+      // Don't stop polling on network errors, just log them
+      if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR') {
+        console.log('⚠️ Backend not reachable, will retry...');
+      } else {
+        setPolling(false);
+      }
     } finally {
       setLoading(false);
     }
