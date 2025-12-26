@@ -20,10 +20,20 @@ export const AGENT_CONFIG = {
     return process.env.EXPO_PUBLIC_AGENT_ID 
       ? `/userflow/GenOxyChatScreen?agentId=${process.env.EXPO_PUBLIC_AGENT_ID}`
       : null;
+  },
+  
+  // 🔍 Debug function
+  debug: () => {
+    console.log('🔧 AGENT_CONFIG Debug:', {
+      id: process.env.EXPO_PUBLIC_AGENT_ID,
+      name: process.env.EXPO_PUBLIC_AGENT_NAME,
+      buildId: process.env.EXPO_PUBLIC_BUILD_ID,
+      isLocked: !!process.env.EXPO_PUBLIC_AGENT_ID
+    });
   }
 };
 
 // 🔍 Debug Info
 if (__DEV__) {
-  console.log('🔧 Agent Config:', AGENT_CONFIG);
+  AGENT_CONFIG.debug();
 }

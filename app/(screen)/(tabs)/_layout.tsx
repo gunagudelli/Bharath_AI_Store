@@ -14,12 +14,20 @@ import { logout } from '../../Redux/action/index'; // Adjust path
 import { Alert } from 'react-native';
 import { AppDispatch } from '@/app/Redux/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+import SingleAgentMode from '../../../components/SingleAgentMode';
+import { isSingleAgentMode } from '../../../utils/agentMode';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  // 🔥 Check if this is a single-agent APK
+  if (isSingleAgentMode()) {
+    return <SingleAgentMode />;
+  }
 
   // Theme colors
   const activeTintColor = isDark ? '#A78BFA' : '#667eea';

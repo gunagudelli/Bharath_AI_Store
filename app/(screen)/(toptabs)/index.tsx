@@ -22,6 +22,8 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AIRoleImage from "../AgentCreation/AIRoleImage";
 import { router } from "expo-router";
 import { useSelector } from "react-redux";
+import APKBuildStatus from "../../../components/APKBuildStatus";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const { width } = Dimensions.get("window");
 
 interface AgentItem {
@@ -82,6 +84,10 @@ const BharathAgentstore: React.FC = () => {
   // 🔥 APK Generation States
   const [generatingApk, setGeneratingApk] = useState<{[key: string]: boolean}>({});
   const [buildProgress, setBuildProgress] = useState<{[key: string]: {step: number, message: string, progress: number}}>({});
+  const [showBuildStatus, setShowBuildStatus] = useState(false);
+  const [currentBuildId, setCurrentBuildId] = useState<string>("");
+  const [currentAgentName, setCurrentAgentName] = useState<string>("");
+  const [activeBuildsByAgent, setActiveBuildsByAgent] = useState<{[key: string]: string}>({});
   
   // 🔒 Get user data from Redux
   const userData = useSelector((state: any) => state.userData);
@@ -243,8 +249,39 @@ const BharathAgentstore: React.FC = () => {
     React.useCallback(() => {
       console.log("Screen focused, loading agents...");
       getAgents(null, false);
+      checkForOngoingBuilds(); // Check for ongoing builds
     }, [])
   );
+  
+  // 🔥 Check for ongoing builds when screen loads
+  const checkForOngoingBuilds = async () => {
+    try {
+      console.log('🔍 Checking for ongoing APK builds...');
+      
+      // Load active builds from storage
+      const storedBuilds = await AsyncStorage.getItem('activeBuildsByAgent');
+      if (storedBuilds) {
+        const builds = JSON.parse(storedBuilds);
+        setActiveBuildsByAgent(builds);
+        
+        // Resume polling for each active build
+        Object.entries(builds).forEach(([agentId, buildId]) => {
+          console.log(`🔄 Resuming polling for agent ${agentId}, build ${buildId}`);
+          // Find agent name from loaded agents
+          const agent = agents.find(a => 
+            (a.id || a.assistantId || a.agentId) === agentId
+          );
+          const agentName = agent?.name || 'Unknown Agent';
+          
+          // Resume polling
+          pollBuildStatus(buildId as string, agentId, agentName);
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error checking ongoing builds:', error);
+    }
+  };
 
   // Updated: Local filtering (always applies search to agents)
   useEffect(() => {
@@ -316,18 +353,37 @@ const BharathAgentstore: React.FC = () => {
       });
       
       if (response.data.success) {
+        const buildId = response.data.buildId;
         setBuildProgress(prev => ({ ...prev, [agentId]: { step: 2, message: 'Build started on server...', progress: 50 } }));
+        
+        // Store active build for this agent
+        setActiveBuildsByAgent(prev => ({ ...prev, [agentId]: buildId }));
+        
+        // Persist to storage
+        AsyncStorage.setItem('activeBuildsByAgent', JSON.stringify({ ...activeBuildsByAgent, [agentId]: buildId }));
+        AsyncStorage.setItem(`buildDetails_${buildId}`, JSON.stringify({
+          agentId,
+          agentName: agent.name,
+          buildId,
+          startTime: new Date().toISOString()
+        }));
+        
+        // Show detailed build status
+        setCurrentBuildId(buildId);
+        setCurrentAgentName(agent.name || 'Unknown Agent');
+        setShowBuildStatus(true);
         
         Alert.alert(
           '✅ APK Build Started!',
-          `🔨 Building ${agent.name} APK...\n\n⏱️ Estimated time: 2-5 minutes\n🔔 You'll get a notification when ready`,
-          [{ text: 'Got it!' }]
+          `🔨 Building ${agent.name} APK...\n\n⏱️ Estimated time: 2-5 minutes\n🔔 Tap "View Details" to track progress`,
+          [
+            { text: 'View Details', onPress: () => setShowBuildStatus(true) },
+            { text: 'OK', style: 'cancel' }
+          ]
         );
         
-        // Simulate progress updates (replace with real webhook later)
-        setTimeout(() => {
-          setBuildProgress(prev => ({ ...prev, [agentId]: { step: 3, message: 'Building APK...', progress: 80 } }));
-        }, 30000); // 30 seconds
+        // 🔥 Poll for build status
+        pollBuildStatus(buildId, agentId, agent.name);
         
       } else {
         throw new Error(response.data.error || 'APK generation failed');
@@ -344,17 +400,113 @@ const BharathAgentstore: React.FC = () => {
           { text: 'Cancel', style: 'cancel' }
         ]
       );
-    } finally {
-      // Clear progress after delay
-      setTimeout(() => {
-        setGeneratingApk(prev => ({ ...prev, [agentId]: false }));
-        setBuildProgress(prev => {
-          const newProgress = { ...prev };
-          delete newProgress[agentId];
-          return newProgress;
-        });
-      }, 3000);
+      
+      // Clear progress immediately on error
+      setGeneratingApk(prev => ({ ...prev, [agentId]: false }));
+      setBuildProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[agentId];
+        return newProgress;
+      });
     }
+  };
+  
+  // 🔥 Poll Build Status Function (SIMPLIFIED)
+  const pollBuildStatus = async (buildId: string, agentId: string, agentName: string) => {
+    console.log(`🔄 Starting polling for build ${buildId}`);
+    
+    const poll = async () => {
+      try {
+        console.log(`🔍 Checking build status for ${buildId}`);
+        const response = await axios.get(`${APK_BASE_URL}build-status/${buildId}`);
+        
+        if (response.data.success && response.data.build) {
+          const build = response.data.build;
+          console.log(`📊 Build status: ${build.status}`);
+          
+          if (build.status === 'completed' && build.apkUrl) {
+            console.log(`✅ Build completed! APK URL: ${build.apkUrl}`);
+            
+            // Remove from active builds
+            setActiveBuildsByAgent(prev => {
+              const newBuilds = { ...prev };
+              delete newBuilds[agentId];
+              AsyncStorage.setItem('activeBuildsByAgent', JSON.stringify(newBuilds));
+              return newBuilds;
+            });
+            
+            // Show success alert with download
+            Alert.alert(
+              '🎉 APK Ready!',
+              `✅ ${agentName} APK is ready!\n\n📥 Tap "Download" to get your APK`,
+              [
+                { 
+                  text: 'Download Now', 
+                  onPress: () => {
+                    Linking.openURL(build.apkUrl).catch(() => {
+                      Alert.alert('Error', 'Could not open download link');
+                    });
+                  }
+                },
+                { text: 'Later', style: 'cancel' }
+              ]
+            );
+            
+            // Clear states
+            setGeneratingApk(prev => ({ ...prev, [agentId]: false }));
+            setBuildProgress(prev => {
+              const newProgress = { ...prev };
+              delete newProgress[agentId];
+              return newProgress;
+            });
+            
+            return; // Stop polling
+            
+          } else if (build.status === 'failed') {
+            console.log(`❌ Build failed for ${buildId}`);
+            
+            // Remove from active builds
+            setActiveBuildsByAgent(prev => {
+              const newBuilds = { ...prev };
+              delete newBuilds[agentId];
+              AsyncStorage.setItem('activeBuildsByAgent', JSON.stringify(newBuilds));
+              return newBuilds;
+            });
+            
+            Alert.alert(
+              '❌ Build Failed',
+              `😔 APK build failed for ${agentName}\n\n🔄 Please try again later.`,
+              [{ text: 'OK' }]
+            );
+            
+            // Clear states
+            setGeneratingApk(prev => ({ ...prev, [agentId]: false }));
+            setBuildProgress(prev => {
+              const newProgress = { ...prev };
+              delete newProgress[agentId];
+              return newProgress;
+            });
+            
+            return; // Stop polling
+            
+          } else {
+            // Still building - continue polling
+            console.log(`🔄 Build still in progress...`);
+            setTimeout(poll, 10000); // Poll every 10 seconds
+          }
+        } else {
+          console.log(`⚠️ Build not found, continuing to poll...`);
+          setTimeout(poll, 10000);
+        }
+        
+      } catch (error) {
+        console.error('Polling error:', error);
+        setTimeout(poll, 10000); // Continue polling on error
+      }
+    };
+    
+    // Start polling after 10 seconds
+    setTimeout(poll, 10000);
   };
 
   // Updated: Handle navigation for both local and web agents
@@ -563,14 +715,27 @@ const renderAgentCard = ({ item }: { item: AgentItem }): React.ReactElement => {
                 styles.downloadButton,
                 isGenerating && styles.downloadButtonDisabled
               ]}
-              onPress={() => generateAPK(agent)}
+              onPress={() => {
+                const activeBuildId = activeBuildsByAgent[agentId];
+                if (activeBuildId) {
+                  // Show existing build status
+                  setCurrentBuildId(activeBuildId);
+                  setCurrentAgentName(agent.name || 'Unknown Agent');
+                  setShowBuildStatus(true);
+                } else {
+                  // Start new APK generation
+                  generateAPK(agent);
+                }
+              }}
               disabled={isGenerating}
             >
               {isGenerating ? (
                 <ActivityIndicator size="small" color="#FFF" />
               ) : (
                 <>
-                  <Text style={styles.downloadButtonText}>📥 APK</Text>
+                  <Text style={styles.downloadButtonText}>
+                    {activeBuildsByAgent[agentId] ? '📄 Status' : '📥 APK'}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -798,6 +963,14 @@ const renderAgentCard = ({ item }: { item: AgentItem }): React.ReactElement => {
       )}
       {/* Reusable FAB Component */}
       {/* <CustomFAB navigation={navigation} /> */}
+      
+      {/* 🔥 APK Build Status Modal */}
+      <APKBuildStatus
+        visible={showBuildStatus}
+        buildId={currentBuildId}
+        agentName={currentAgentName}
+        onClose={() => setShowBuildStatus(false)}
+      />
     </View>
   );
 };
