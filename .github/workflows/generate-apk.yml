@@ -1,0 +1,34 @@
+name: Generate Agent APK
+
+on:
+  repository_dispatch:
+    types: [generate-apk]
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Expo & EAS
+        run: |
+          npm install -g expo-cli eas-cli
+
+      - name: Expo login
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: expo whoami || expo login --token $EXPO_TOKEN
+
+      - name: Build APK using EAS
+        run: |
+          eas build -p android --profile production --non-interactive
