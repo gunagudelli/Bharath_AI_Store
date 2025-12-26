@@ -21,14 +21,14 @@ jobs:
         run: npm install
 
       - name: Install Expo & EAS
-        run: |
-          npm install -g expo-cli eas-cli
+        run: npm install -g expo eas-cli
 
-      - name: Expo login
+      - name: Expo auth via token
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: npx expo whoami || npx expo login --token $EXPO_TOKEN
+        run: echo "Using Expo token authentication"
 
       - name: Build APK using EAS
-        run: |
-          npx eas build -p android --profile production --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build -p android --profile production --non-interactive
