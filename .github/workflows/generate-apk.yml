@@ -27,8 +27,8 @@ jobs:
       - name: Expo login
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: expo whoami || expo login --token $EXPO_TOKEN
+        run: npx expo whoami || npx expo login --token $EXPO_TOKEN
 
       - name: Build APK using EAS
         run: |
-          eas build -p android --profile production --non-interactive
+          npx eas build -p android --profile production --non-interactive
