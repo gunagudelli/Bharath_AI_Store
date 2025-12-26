@@ -411,14 +411,24 @@ const BharathAgentstore: React.FC = () => {
     }
   };
   
-  // 🔥 Poll Build Status Function (SIMPLIFIED)
+  // 🔥 Poll Build Status Function (OPTIMIZED)
   const pollBuildStatus = async (buildId: string, agentId: string, agentName: string) => {
     console.log(`🔄 Starting polling for build ${buildId}`);
+    let pollCount = 0;
+    const maxPolls = 60; // Max 10 minutes of polling
     
     const poll = async () => {
+      if (pollCount >= maxPolls) {
+        console.log(`⏰ Polling timeout for build ${buildId}`);
+        setGeneratingApk(prev => ({ ...prev, [agentId]: false }));
+        return;
+      }
+      
       try {
-        console.log(`🔍 Checking build status for ${buildId}`);
-        const response = await axios.get(`${APK_BASE_URL}build-status/${buildId}`);
+        console.log(`🔍 Checking build status for ${buildId} (attempt ${pollCount + 1})`);
+        const response = await axios.get(`${APK_BASE_URL}build-status/${buildId}`, {
+          timeout: 5000
+        });
         
         if (response.data.success && response.data.build) {
           const build = response.data.build;
@@ -490,23 +500,27 @@ const BharathAgentstore: React.FC = () => {
             return; // Stop polling
             
           } else {
-            // Still building - continue polling
+            // Still building - continue polling with exponential backoff
             console.log(`🔄 Build still in progress...`);
-            setTimeout(poll, 10000); // Poll every 10 seconds
+            pollCount++;
+            const delay = Math.min(15000 + (pollCount * 2000), 30000); // 15s to 30s
+            setTimeout(poll, delay);
           }
         } else {
           console.log(`⚠️ Build not found, continuing to poll...`);
-          setTimeout(poll, 10000);
+          pollCount++;
+          setTimeout(poll, 15000);
         }
         
       } catch (error) {
-        console.error('Polling error:', error);
-        setTimeout(poll, 10000); // Continue polling on error
+        console.error('Polling error:', error.message);
+        pollCount++;
+        setTimeout(poll, 20000); // Longer delay on error
       }
     };
     
-    // Start polling after 10 seconds
-    setTimeout(poll, 10000);
+    // Start polling after 15 seconds
+    setTimeout(poll, 15000);
   };
 
   // Updated: Handle navigation for both local and web agents

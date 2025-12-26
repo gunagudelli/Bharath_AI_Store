@@ -49,7 +49,7 @@ const APKBuildStatus: React.FC<APKBuildStatusProps> = ({
   useEffect(() => {
     if (visible && buildId) {
       fetchBuildStatus();
-      const interval = polling ? setInterval(fetchBuildStatus, 3000) : null; // Poll every 3 seconds
+      const interval = polling ? setInterval(fetchBuildStatus, 15000) : null; // Poll every 15 seconds
       
       return () => {
         if (interval) clearInterval(interval);
