@@ -40,3 +40,6 @@ export const store = createStore(
 export const persistor = persistStore(store);
 
 export type AppDispatch = typeof store.dispatch; // Typed dispatch
+
+// Default export to satisfy Expo Router
+export default store;

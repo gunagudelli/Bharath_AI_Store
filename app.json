@@ -45,13 +45,6 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "58491ee0-4990-4c1a-83c6-3d48e8585695"
-      }
-    },
-    "owner": "oxyrice"
+    }
   }
 }

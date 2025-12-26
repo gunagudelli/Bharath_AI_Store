@@ -1,25 +1,26 @@
-// Config.tsx - TypeScript version of the original JS config
-// This module exports the BASE_URL based on userStage and the userStage itself.
-// Note: The function parameters 'value' and 'value1' are unused in the logic.
-// If they are intended for future use, keep them; otherwise, they could be removed for clarity.
+// Config.tsx - Hybrid configuration for development
+// Uses original API for agents, local backend for APK generation
 
-const config = (value?: unknown, value1?: unknown): string => {  // ✅ Fix: Made params optional with '?'
-  const userStage: string = "test1"; // Internal userStage for BASE_URL determination
+const config = (value?: unknown, value1?: unknown): string => {
+  const userStage: string = "test1"; // Keep original for agent data
   
   let BASE_URL: string;
   if (userStage === "test1") {
-    // Live
+    // Live - for fetching agents
     BASE_URL = 'https://meta.oxyloans.com/api/';
   } else {
     // Test
     BASE_URL = 'https://meta.oxyglobal.tech/api/';
   }
   
-  // console.log(BASE_URL); // Uncomment if needed for debugging
+  console.log('🔗 Using BASE_URL for agents:', BASE_URL);
   
   return BASE_URL;
 };
 
+// Local backend URL for APK generation - use your computer's IP
+export const APK_BASE_URL = 'http://192.168.0.135:3000/';
+
 export const userStage = "test1";
 
-export default config(); // Immediate invocation returns the BASE_URL string
+export default config(); // Returns original API URL for agents

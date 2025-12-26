@@ -37,3 +37,6 @@ import { store } from './store'; // Adjust path if your store is elsewhere
 
 // Typed dispatch (infers from store—supports payload for custom actions)
 export type AppDispatch = typeof store.dispatch; // ✅ Fix: typeof store.dispatch (from store/index.ts)
+
+// Default export to satisfy Expo Router
+export default {};

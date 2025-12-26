@@ -57,3 +57,6 @@ export const resetOnboarding = (): ReduxAction<null> => ({
   type: 'RESET_ONBOARDING',
   payload: null,
 });
+
+// Default export to satisfy Expo Router
+export default {};

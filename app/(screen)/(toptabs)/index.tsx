@@ -17,11 +17,11 @@ import {
 } from "react-native";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
-import BASE_URL from "../../../config";
+import BASE_URL, { APK_BASE_URL } from "../../../config";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AIRoleImage from "../AgentCreation/AIRoleImage";
-// import CustomFAB from "./CustomFAB"; // Import the new component
 import { router } from "expo-router";
+import { useSelector } from "react-redux";
 const { width } = Dimensions.get("window");
 
 interface AgentItem {
@@ -78,6 +78,13 @@ const BharathAgentstore: React.FC = () => {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const navigation = useNavigation();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null); // New: for debouncing search API calls
+  
+  // 🔥 APK Generation States
+  const [generatingApk, setGeneratingApk] = useState<{[key: string]: boolean}>({});
+  const [buildProgress, setBuildProgress] = useState<{[key: string]: {step: number, message: string, progress: number}}>({});
+  
+  // 🔒 Get user data from Redux
+  const userData = useSelector((state: any) => state.userData);
 
   // Fetch agents (unchanged)
   const getAgents = async (afterId: string | null = null, append: boolean = false): Promise<void> => {
@@ -96,8 +103,7 @@ const BharathAgentstore: React.FC = () => {
       const response = await axios.get(url, {
         headers: {
           Accept: "*/*",
-          Authorization:
-            "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI4ZjI5MjJkMS0yNmZjLTRlY2ItYWE4ZC00OWM1YjQ4ZDk3NDQiLCJpYXQiOjE3NTM1MjU0MzUsImV4cCI6MTc1NDM4OTQzNX0.TsIcuOPETQVFavDWoqK8Mo_fxbzOHSu_0AM_KfR79RtA0O3bCJ0E2jLpeT0jjTbEvQ4Ub4hapU3-EdxZycNgig",
+          Authorization: userData?.accessToken || "",
         },
       });
       const result: ApiResponse = response.data;
@@ -144,8 +150,7 @@ const BharathAgentstore: React.FC = () => {
       const response = await axios.get(url, {
         headers: {
           Accept: "*/*",
-          Authorization:
-            "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI4ZjI5MjJkMS0yNmZjLTRlY2ItYWE4ZC00OWM1YjQ4ZDk3NDQiLCJpYXQiOjE3NTM1MjU0MzUsImV4cCI6MTc1NDM4OTQzNX0.TsIcuOPETQVFavDWoqK8Mo_fxbzOHSu_0AM_KfR79RtA0O3bCJ0E2jLpeT0jjTbEvQ4Ub4hapU3-EdxZycNgig",
+          Authorization: userData?.accessToken || "",
         },
       });
       const result = response.data;
@@ -286,6 +291,72 @@ const BharathAgentstore: React.FC = () => {
     }
   };
 
+  // 🔥 APK Generation Function (AUTOMATION TRIGGER)
+  const generateAPK = async (agent: AgentItem) => {
+    const agentId = agent.id || agent.assistantId || agent.agentId;
+    if (!agentId) {
+      Alert.alert("Error", "Agent ID not found");
+      return;
+    }
+
+    try {
+      setGeneratingApk(prev => ({ ...prev, [agentId]: true }));
+      setBuildProgress(prev => ({ ...prev, [agentId]: { step: 1, message: 'Starting APK generation...', progress: 20 } }));
+      
+      // 👉 THIS TRIGGERS THE AUTOMATION - Use local backend
+      const response = await axios.post(`${APK_BASE_URL}generate-apk`, {
+        agentId: agentId,
+        agentName: agent.name,
+        userId: userData?.userId || "anonymous" // Use actual user ID from Redux
+      }, {
+        headers: {
+          Accept: "*/*",
+          Authorization: userData?.accessToken || "" // Use actual token from Redux
+        }
+      });
+      
+      if (response.data.success) {
+        setBuildProgress(prev => ({ ...prev, [agentId]: { step: 2, message: 'Build started on server...', progress: 50 } }));
+        
+        Alert.alert(
+          '✅ APK Build Started!',
+          `🔨 Building ${agent.name} APK...\n\n⏱️ Estimated time: 2-5 minutes\n🔔 You'll get a notification when ready`,
+          [{ text: 'Got it!' }]
+        );
+        
+        // Simulate progress updates (replace with real webhook later)
+        setTimeout(() => {
+          setBuildProgress(prev => ({ ...prev, [agentId]: { step: 3, message: 'Building APK...', progress: 80 } }));
+        }, 30000); // 30 seconds
+        
+      } else {
+        throw new Error(response.data.error || 'APK generation failed');
+      }
+      
+    } catch (error: any) {
+      console.error('❌ APK Generation Error:', error);
+      
+      Alert.alert(
+        '❌ APK Generation Failed',
+        `😔 Could not create APK for ${agent.name}\n\n🔍 Error: ${error.message}\n\n🔄 Please try again or contact support.`,
+        [
+          { text: 'Retry', onPress: () => generateAPK(agent) },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
+    } finally {
+      // Clear progress after delay
+      setTimeout(() => {
+        setGeneratingApk(prev => ({ ...prev, [agentId]: false }));
+        setBuildProgress(prev => {
+          const newProgress = { ...prev };
+          delete newProgress[agentId];
+          return newProgress;
+        });
+      }, 3000);
+    }
+  };
+
   // Updated: Handle navigation for both local and web agents
   const goToChat = (agent: AgentItem): void => {
     if (agent.isWeb && agent.url) {
@@ -362,6 +433,11 @@ const renderAgentCard = ({ item }: { item: AgentItem }): React.ReactElement => {
   const isGridMode: boolean = viewMode === "grid";
   const agentImage: string = getAgentImage(agent.name, agent.isWeb, agent.imageUrl);
   const isWebResult: boolean = !!agent.isWeb;
+  
+  // 🔥 APK Generation States for this agent
+  const agentId = agent.id || agent.assistantId || agent.agentId || 'unknown';
+  const isGenerating = generatingApk[agentId] || false;
+  const progress = buildProgress[agentId];
 
   // Check if it's a valid image URL
   const isImageUrl = agentImage.startsWith("http") || agentImage.startsWith("https");
@@ -457,7 +533,7 @@ const renderAgentCard = ({ item }: { item: AgentItem }): React.ReactElement => {
         {getPreview(agent.description || agent.instructions)}
       </Text>
 
-      {/* 🔹 Rating & Button */}
+      {/* 🔹 Rating & Buttons */}
       <View style={styles.cardFooter}>
         <View style={styles.ratingContainer}>
           {[...Array(5)].map((_, i: number) => (
@@ -470,16 +546,58 @@ const renderAgentCard = ({ item }: { item: AgentItem }): React.ReactElement => {
           ))}
           <Text style={styles.ratingText}>({rating}.0)</Text>
         </View>
-        <TouchableOpacity
-          style={styles.useButton}
-          onPress={() => goToChat(agent)}
-        >
-          <Text style={styles.useButtonText}>
-            {isWebResult ? "Open Link" : "Use Agent"}
-          </Text>
-          <Text style={styles.arrowIcon}>→</Text>
-        </TouchableOpacity>
+        
+        {/* 🔥 DOWNLOAD APK BUTTON - AUTOMATION TRIGGER */}
+        {!isWebResult && (
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={styles.useButton}
+              onPress={() => goToChat(agent)}
+            >
+              <Text style={styles.useButtonText}>Use Agent</Text>
+              <Text style={styles.arrowIcon}>→</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.downloadButton,
+                isGenerating && styles.downloadButtonDisabled
+              ]}
+              onPress={() => generateAPK(agent)}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <>
+                  <Text style={styles.downloadButtonText}>📥 APK</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        {/* Web results - single button */}
+        {isWebResult && (
+          <TouchableOpacity
+            style={styles.useButton}
+            onPress={() => goToChat(agent)}
+          >
+            <Text style={styles.useButtonText}>Open Link</Text>
+            <Text style={styles.arrowIcon}>→</Text>
+          </TouchableOpacity>
+        )}
       </View>
+      
+      {/* 🔥 APK Build Progress Indicator */}
+      {progress && (
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${progress.progress}%` }]} />
+          </View>
+          <Text style={styles.progressText}>{progress.message}</Text>
+        </View>
+      )}
 
       {/* Corner Accent */}
       <View style={styles.cornerAccent} />
@@ -1085,5 +1203,51 @@ fallbackText: {
   loadMoreIcon: {
     color: "#FFFFFF",
     fontSize: 14,
+  },
+  
+  // 🔥 APK Generation Styles
+  buttonRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  downloadButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#10B981",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    elevation: 1,
+  },
+  downloadButtonDisabled: {
+    opacity: 0.6,
+  },
+  downloadButtonText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "500",
+  },
+  progressContainer: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 2,
+    overflow: "hidden",
+    marginBottom: 4,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#10B981",
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 10,
+    color: "#6B7280",
+    textAlign: "center",
   },
 });

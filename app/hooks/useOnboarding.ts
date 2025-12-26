@@ -23,3 +23,6 @@ export const useOnboarding = () => {
     reset,
   };
 };
+
+// Default export to satisfy Expo Router
+export default useOnboarding;
