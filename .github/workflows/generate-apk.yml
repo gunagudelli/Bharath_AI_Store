@@ -18,72 +18,30 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
-        working-directory: ./Bharat_AI_Store
         run: npm install
 
       - name: Install Expo & EAS
-        run: npm install -g expo eas-cli
-
-      - name: Configure Agent Environment
         run: |
-          echo "EXPO_PUBLIC_AGENT_ID=${{ github.event.client_payload.agentId }}" >> $GITHUB_ENV
-          echo "EXPO_PUBLIC_AGENT_NAME=${{ github.event.client_payload.agentName }}" >> $GITHUB_ENV
-          echo "EXPO_PUBLIC_BUILD_ID=${{ github.event.client_payload.buildId }}" >> $GITHUB_ENV
-          echo "🔥 Building APK for: ${{ github.event.client_payload.agentName }}"
+          npm install -g expo-cli eas-cli
 
-      - name: Build APK using EAS
-        working-directory: ./Bharat_AI_Store
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EXPO_PUBLIC_AGENT_ID: ${{ github.event.client_payload.agentId }}
-          EXPO_PUBLIC_AGENT_NAME: ${{ github.event.client_payload.agentName }}
-          EXPO_PUBLIC_BUILD_ID: ${{ github.event.client_payload.buildId }}
-        run: |
-          eas build -p android --profile agent-apk --non-interactive --wait
+      - name: Login to Expo
+        run: expo whoami || expo login --token ${{ secrets.EXPO_TOKEN }}
 
-      - name: Get APK Download URL
-        id: get-apk
-        working-directory: ./Bharat_AI_Store
+      - name: Configure Agent App
         run: |
-          sleep 10
-          APK_URL=$(eas build:list --platform=android --limit=1 --json | jq -r '.[0].artifacts.buildUrl')
-          if [ "$APK_URL" = "null" ] || [ -z "$APK_URL" ]; then
-            echo "❌ Failed to get APK URL"
-            exit 1
-          fi
-          echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
-          echo "📱 APK URL: $APK_URL"
+          echo "AGENT_ID=${{ github.event.client_payload.agentId }}" >> .env
+          echo "AGENT_NAME=${{ github.event.client_payload.agentName }}" >> .env
+          echo "BUILD_ID=${{ github.event.client_payload.buildId }}" >> .env
 
-      - name: Notify Backend Success
-        if: success() && steps.get-apk.outputs.apk_url != 'null'
+      - name: Build APK with EAS
         run: |
-          if [ -z "${{ secrets.WEBHOOK_URL }}" ]; then
-            echo "⚠️ WEBHOOK_URL not configured, skipping notification"
-            exit 0
-          fi
-          curl -X POST "${{ secrets.WEBHOOK_URL }}/build-webhook" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "buildId": "${{ github.event.client_payload.buildId }}",
-              "agentId": "${{ github.event.client_payload.agentId }}",
-              "status": "completed",
-              "artifacts": {
-                "apkUrl": "${{ steps.get-apk.outputs.apk_url }}"
-              }
-            }'
+          eas build --platform android --profile production --non-interactive
 
-      - name: Notify Backend Failure
-        if: failure()
+      - name: Notify Backend (Webhook)
         run: |
-          if [ -z "${{ secrets.WEBHOOK_URL }}" ]; then
-            echo "⚠️ WEBHOOK_URL not configured, skipping notification"
-            exit 0
-          fi
-          curl -X POST "${{ secrets.WEBHOOK_URL }}/build-webhook" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "buildId": "${{ github.event.client_payload.buildId }}",
-              "agentId": "${{ github.event.client_payload.agentId }}",
-              "status": "failed",
-              "error": "Build process failed"
-            }'
+          curl -X POST ${{ secrets.WEBHOOK_URL }}/apk-complete \
+          -H "Content-Type: application/json" \
+          -d '{
+            "agentId": "${{ github.event.client_payload.agentId }}",
+            "buildId": "${{ github.event.client_payload.buildId }}"
+          }'
