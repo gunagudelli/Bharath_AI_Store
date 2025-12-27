@@ -9,52 +9,71 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
+      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node
+      # 2️⃣ Node setup
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      # 3️⃣ Install dependencies
+      # 3️⃣ Install jq
+      - name: Install system tools
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      # 4️⃣ Install dependencies
       - name: Install dependencies
         run: npm install
 
-      # 4️⃣ Install Expo + EAS
+      # 5️⃣ Install Expo & EAS
       - name: Install Expo & EAS
-        run: npm install -g expo eas-cli
+        run: |
+          npm install -g @expo/cli@latest eas-cli@latest
+          expo --version
+          eas --version
 
-      # 5️⃣ Authenticate Expo using token
-      - name: Authenticate Expo
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: echo "Expo authenticated using token"
-
-      # 6️⃣ Set Agent Environment Variables
+      # 6️⃣ Set agent env variables
       - name: Configure Agent Environment
         run: |
           echo "EXPO_PUBLIC_AGENT_ID=${{ github.event.client_payload.agentId }}" >> $GITHUB_ENV
           echo "EXPO_PUBLIC_AGENT_NAME=${{ github.event.client_payload.agentName }}" >> $GITHUB_ENV
           echo "EXPO_PUBLIC_BUILD_ID=${{ github.event.client_payload.buildId }}" >> $GITHUB_ENV
+          echo "🔥 Building APK for agent: ${{ github.event.client_payload.agentName }}"
 
-      # 7️⃣ Build APK (AGENT-SPECIFIC)
+      # 7️⃣ Build APK
       - name: Build APK using EAS
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
+          echo "🚀 Starting EAS build..."
           eas build -p android --profile agent-apk --non-interactive --wait
 
-      # 8️⃣ Get APK Download URL
-      - name: Get APK URL
-        id: apk
+      # 8️⃣ Fetch correct APK URL using BUILD_ID
+      - name: Get APK Download URL
+        id: get-apk
         run: |
-          APK_URL=$(eas build:list --platform android --limit 1 --json | jq -r '.[0].artifacts.buildUrl')
-          echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
+          echo "🔍 Fetching APK for BUILD_ID=${{ github.event.client_payload.buildId }}"
 
-      # 9️⃣ Notify Backend (SUCCESS)
+          BUILD_LIST=$(eas build:list --platform android --json)
+
+          APK_URL=$(echo "$BUILD_LIST" | jq -r --arg BID "${{ github.event.client_payload.buildId }}" '
+            map(select(.metadata.env.EXPO_PUBLIC_BUILD_ID == $BID))
+            | sort_by(.createdAt)
+            | last
+            | .artifacts.applicationArchiveUrl
+          ')
+
+          if [ -z "$APK_URL" ] || [ "$APK_URL" = "null" ]; then
+            echo "❌ APK URL not found for this buildId"
+            exit 1
+          fi
+
+          echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
+          echo "✅ APK URL: $APK_URL"
+
+      # 9️⃣ Notify backend SUCCESS
       - name: Notify Backend Success
         if: success()
         run: |
@@ -67,14 +86,14 @@ jobs:
             "apkUrl": "${{ steps.apk.outputs.apk_url }}"
           }'
 
-      # 🔟 Notify Backend (FAILURE)
+      # 🔟 Notify backend FAILURE
       - name: Notify Backend Failure
         if: failure()
         run: |
           curl -X POST "${{ secrets.WEBHOOK_URL }}/build-webhook" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "buildId": "${{ github.event.client_payload.buildId }}",
-            "agentId": "${{ github.event.client_payload.agentId }}",
-            "status": "failed"
-          }'
+            -H "Content-Type: application/json" \
+            -d '{
+              "buildId": "${{ github.event.client_payload.buildId }}",
+              "agentId": "${{ github.event.client_payload.agentId }}",
+              "status": "failed"
+            }'

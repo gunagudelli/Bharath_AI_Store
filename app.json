@@ -1,57 +1,41 @@
 {
   "expo": {
-    "name": "Bharat_AI_Store",
-    "slug": "Bharat_AI_Store",
+    "name": "Bharath AI Automation",
+    "slug": "bharath-ai-automation",
+    "owner": "guna123",
     "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/bharat-Eicon.png",
     "scheme": "bharataistore",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true
-    },
+
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/bharat-Eicon.png",
-        "backgroundImage": "./assets/images/bharat-Eicon.png",
-        "monochromeImage": "./assets/images/bharat-Eicon.png"
-      },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
       "package": "com.bharat.ai.store",
-      "versionCode": 4
+      "versionCode": 4,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/bharat-Eicon.png",
+        "backgroundColor": "#E6F4FE"
+      }
     },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
+
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
           "image": "./assets/images/bharat-Eicon.png",
-          "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
+          "backgroundColor": "#ffffff"
         }
       ]
     ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
-    },
+
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "ef608c48-b55b-443e-b824-41a07e6eedf3"
+        "projectId": "a4ad1ced"
       }
-    },
-    "owner": "guna123"
+    }
   }
 }
