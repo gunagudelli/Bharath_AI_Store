@@ -23,6 +23,7 @@ import AIRoleImage from "../AgentCreation/AIRoleImage";
 import { router } from "expo-router";
 import { useSelector } from "react-redux";
 import APKBuildStatus from "../../../components/APKBuildStatus";
+import BuildTestPanel from "../../../components/BuildTestPanel";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 const { width } = Dimensions.get("window");
 
@@ -88,6 +89,7 @@ const BharathAgentstore: React.FC = () => {
   const [currentBuildId, setCurrentBuildId] = useState<string>("");
   const [currentAgentName, setCurrentAgentName] = useState<string>("");
   const [activeBuildsByAgent, setActiveBuildsByAgent] = useState<{[key: string]: string}>({});
+  const [showTestPanel, setShowTestPanel] = useState(false);
   
   // 🔒 Get user data from Redux
   const userData = useSelector((state: any) => state.userData);
@@ -367,6 +369,38 @@ const BharathAgentstore: React.FC = () => {
           buildId,
           startTime: new Date().toISOString()
         }));
+        
+        // 🔥 Set timeout to auto-fail after 10 minutes
+        setTimeout(() => {
+          // Check if build is still active after 10 minutes
+          setActiveBuildsByAgent(current => {
+            if (current[agentId] === buildId) {
+              console.log(`⏰ Build timeout for ${buildId}`);
+              
+              Alert.alert(
+                '⏰ Build Timeout',
+                `Build took too long for ${agent.name}.\n\nThis usually means the build failed.\n\nPlease try again.`,
+                [{ text: 'OK' }]
+              );
+              
+              // Remove from active builds
+              const newBuilds = { ...current };
+              delete newBuilds[agentId];
+              AsyncStorage.setItem('activeBuildsByAgent', JSON.stringify(newBuilds));
+              
+              // Clear states
+              setGeneratingApk(prev => ({ ...prev, [agentId]: false }));
+              setBuildProgress(prev => {
+                const newProgress = { ...prev };
+                delete newProgress[agentId];
+                return newProgress;
+              });
+              
+              return newBuilds;
+            }
+            return current;
+          });
+        }, 10 * 60 * 1000); // 10 minutes timeout
         
         // Show detailed build status
         setCurrentBuildId(buildId);
@@ -913,6 +947,14 @@ const renderAgentCard = ({ item }: { item: AgentItem }): React.ReactElement => {
     <View style={styles.container}>
       {/* Enhanced Header */}
       {renderHeader()}
+      
+      {/* 🧪 Test Panel Button (Development Only) */}
+      <TouchableOpacity 
+        style={styles.testButton}
+        onPress={() => setShowTestPanel(true)}
+      >
+        <Text style={styles.testButtonText}>🧪 Test Builds</Text>
+      </TouchableOpacity>
       {/* Enhanced Grid/List */}
       <View style={styles.contentContainer}>
         <FlatList<AgentItem>
@@ -984,6 +1026,12 @@ const renderAgentCard = ({ item }: { item: AgentItem }): React.ReactElement => {
         buildId={currentBuildId}
         agentName={currentAgentName}
         onClose={() => setShowBuildStatus(false)}
+      />
+      
+      {/* 🧪 Build Test Panel */}
+      <BuildTestPanel
+        visible={showTestPanel}
+        onClose={() => setShowTestPanel(false)}
       />
     </View>
   );
@@ -1436,5 +1484,22 @@ fallbackText: {
     fontSize: 10,
     color: "#6B7280",
     textAlign: "center",
+  },
+  
+  // 🧪 Test Button Styles
+  testButton: {
+    position: "absolute",
+    top: 100,
+    right: 20,
+    backgroundColor: "#8B5CF6",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    zIndex: 100,
+  },
+  testButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
