@@ -9,7 +9,6 @@
     "scheme": "bharataistore",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "android": {
       "package": "com.bharat.ai.store",
       "versionCode": 4,
@@ -18,7 +17,6 @@
         "backgroundColor": "#E6F4FE"
       }
     },
-
     "plugins": [
       "expo-router",
       [
@@ -30,7 +28,6 @@
         }
       ]
     ],
-
     "extra": {
       "router": {},
       "eas": {
