@@ -23,6 +23,7 @@ jobs:
       - name: Install Expo & EAS CLI
         run: |
           npm install -g @expo/cli@latest eas-cli@latest
+          npx expo install --fix
           echo "Verifying installations..."
           npx expo --version
           npx eas --version

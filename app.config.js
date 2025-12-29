@@ -9,7 +9,7 @@ export default ({ config }) => {
     name: isSingleAgent
       ? process.env.EXPO_PUBLIC_AGENT_NAME
       : "Bharath AI Store",
-    slug: "bharath-ai-agent",
+    slug: "bharath-ai-automation",
     owner: "guna123",
     version: "1.0.0",
     orientation: "portrait",
@@ -68,7 +68,7 @@ export default ({ config }) => {
         origin: false
       },
       eas: {
-        projectId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        projectId: "a4ad1ced-4882-4621-98b0-f94ba8039da3"
       }
     }
   };
