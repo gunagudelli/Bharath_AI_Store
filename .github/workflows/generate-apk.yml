@@ -9,70 +9,65 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Setup Node.js (Expo requires Node 20 now)
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      # 3️⃣ Install dependencies (NO legacy, NO fix)
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm install
 
-      - name: Install Expo & EAS CLI
-        run: |
-          npm install -g @expo/cli@latest eas-cli@latest
-          npx expo install --fix
-          echo "Verifying installations..."
-          npx expo --version
-          npx eas --version
+      # 4️⃣ Install EAS CLI only (Expo CLI via npx)
+      - name: Install EAS CLI
+        run: npm install -g eas-cli@latest
 
+      # 5️⃣ Set Agent-specific environment variables
       - name: Configure Agent Environment
         run: |
           echo "EXPO_PUBLIC_AGENT_ID=${{ github.event.client_payload.agentId }}" >> $GITHUB_ENV
           echo "EXPO_PUBLIC_AGENT_NAME=${{ github.event.client_payload.agentName }}" >> $GITHUB_ENV
           echo "EXPO_PUBLIC_BUILD_ID=${{ github.event.client_payload.buildId }}" >> $GITHUB_ENV
-          echo "🔥 Building APK for: ${{ github.event.client_payload.agentName }}"
+          echo "🔥 Building APK for agent: ${{ github.event.client_payload.agentName }}"
           echo "🆔 Agent ID: ${{ github.event.client_payload.agentId }}"
           echo "🆔 Build ID: ${{ github.event.client_payload.buildId }}"
 
-      - name: Expo Login
+      # 6️⃣ Verify Expo authentication via token
+      - name: Verify Expo Authentication
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          echo "Authenticating with Expo..."
-          npx expo whoami
+        run: npx expo whoami
 
+      # 7️⃣ Build APK using EAS
       - name: Build APK with EAS
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EXPO_PUBLIC_AGENT_ID: ${{ github.event.client_payload.agentId }}
-          EXPO_PUBLIC_AGENT_NAME: ${{ github.event.client_payload.agentName }}
-          EXPO_PUBLIC_BUILD_ID: ${{ github.event.client_payload.buildId }}
         run: |
-          echo "🚀 Starting EAS build..."
-          npx eas build --platform android --profile agent-apk --non-interactive --wait
+          npx eas build \
+            --platform android \
+            --profile agent-apk \
+            --non-interactive \
+            --wait
 
+      # 8️⃣ Get APK download URL
       - name: Get APK Download URL
         id: get-apk
         run: |
-          echo "📥 Getting APK download URL..."
-          APK_URL=$(npx eas build:list --platform=android --limit=1 --json | jq -r '.[0].artifacts.buildUrl // empty')
-          if [ -z "$APK_URL" ] || [ "$APK_URL" = "null" ]; then
-            echo "❌ No APK URL found"
-            APK_URL="https://expo.dev/artifacts/build-failed"
-          fi
+          APK_URL=$(npx eas build:list --platform=android --limit=1 --json | jq -r '.[0].artifacts.buildUrl')
           echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
           echo "📱 APK URL: $APK_URL"
 
+      # 9️⃣ Notify backend on SUCCESS
       - name: Notify Backend Success
         if: success()
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
-          echo "📡 Notifying backend of successful build..."
-          echo "Webhook URL: $WEBHOOK_URL"
           curl -X POST "$WEBHOOK_URL/build-webhook" \
             -H "Content-Type: application/json" \
             -d '{
@@ -80,24 +75,20 @@ jobs:
               "agentId": "${{ github.event.client_payload.agentId }}",
               "agentName": "${{ github.event.client_payload.agentName }}",
               "status": "completed",
-              "artifacts": {
-                "apkUrl": "${{ steps.get-apk.outputs.apk_url }}"
-              }
-            }' || echo "❌ Failed to notify backend"
+              "apkUrl": "${{ steps.get-apk.outputs.apk_url }}"
+            }'
 
+      # 🔟 Notify backend on FAILURE
       - name: Notify Backend Failure
         if: failure()
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
-          echo "📡 Notifying backend of build failure..."
-          echo "Webhook URL: $WEBHOOK_URL"
           curl -X POST "$WEBHOOK_URL/build-webhook" \
             -H "Content-Type: application/json" \
             -d '{
               "buildId": "${{ github.event.client_payload.buildId }}",
               "agentId": "${{ github.event.client_payload.agentId }}",
               "agentName": "${{ github.event.client_payload.agentName }}",
-              "status": "failed",
-              "error": "GitHub Actions build process failed"
-            }' || echo "❌ Failed to notify backend of failure"
+              "status": "failed"
+            }'
