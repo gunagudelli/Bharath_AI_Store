@@ -58,7 +58,14 @@ jobs:
       - name: Get APK Download URL
         id: get-apk
         run: |
-          APK_URL=$(npx eas build:list --platform=android --limit=1 --json | jq -r '.[0].artifacts.buildUrl')
+          sleep 10
+          APK_DATA=$(npx eas build:list --platform=android --limit=1 --json)
+          echo "Raw APK data: $APK_DATA"
+          APK_URL=$(echo "$APK_DATA" | jq -r '.[0].artifacts.buildUrl // empty')
+          if [ -z "$APK_URL" ] || [ "$APK_URL" = "null" ]; then
+            echo "❌ No APK URL found"
+            APK_URL="https://expo.dev/artifacts/eas/build-not-found"
+          fi
           echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
           echo "📱 APK URL: $APK_URL"
 
@@ -68,6 +75,10 @@ jobs:
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "⚠️ WEBHOOK_URL not set, skipping notification"
+            exit 0
+          fi
           curl -X POST "$WEBHOOK_URL/build-webhook" \
             -H "Content-Type: application/json" \
             -d '{
@@ -84,6 +95,10 @@ jobs:
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "⚠️ WEBHOOK_URL not set, skipping notification"
+            exit 0
+          fi
           curl -X POST "$WEBHOOK_URL/build-webhook" \
             -H "Content-Type: application/json" \
             -d '{

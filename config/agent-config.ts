@@ -10,25 +10,31 @@ export const AGENT_CONFIG = {
   
   // 📱 App Branding
   getAppName: () => {
-    return process.env.EXPO_PUBLIC_AGENT_NAME 
-      ? `${process.env.EXPO_PUBLIC_AGENT_NAME} AI`
-      : 'Bharath AI Store';
+    const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
+    if (agentName && agentName !== '${EXPO_PUBLIC_AGENT_NAME}') {
+      return `${agentName} AI`;
+    }
+    return 'Bharath AI Store';
   },
   
   // 🎯 Direct Chat URL
   getChatUrl: () => {
-    return process.env.EXPO_PUBLIC_AGENT_ID 
-      ? `/userflow/GenOxyChatScreen?agentId=${process.env.EXPO_PUBLIC_AGENT_ID}`
-      : null;
+    const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
+    if (agentId && agentId !== '${EXPO_PUBLIC_AGENT_ID}') {
+      return `/userflow/GenOxyChatScreen?agentId=${agentId}`;
+    }
+    return null;
   },
   
   // 🔍 Debug function
   debug: () => {
-    console.log('🔧 AGENT_CONFIG Debug:', {
-      id: process.env.EXPO_PUBLIC_AGENT_ID,
-      name: process.env.EXPO_PUBLIC_AGENT_NAME,
-      buildId: process.env.EXPO_PUBLIC_BUILD_ID,
-      isLocked: !!process.env.EXPO_PUBLIC_AGENT_ID
+    console.log('🔧 Agent Config:', {
+      buildId: process.env.EXPO_PUBLIC_BUILD_ID || null,
+      getAppName: AGENT_CONFIG.getAppName(),
+      getChatUrl: AGENT_CONFIG.getChatUrl(),
+      id: process.env.EXPO_PUBLIC_AGENT_ID || null,
+      isLocked: !!process.env.EXPO_PUBLIC_AGENT_ID,
+      name: process.env.EXPO_PUBLIC_AGENT_NAME || null
     });
   }
 };
