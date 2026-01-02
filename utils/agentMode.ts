@@ -21,6 +21,7 @@ export const getAgentConfig = (): AgentConfig => {
 
 export const isSingleAgentMode = (): boolean => {
   const { singleAgent } = Constants.expoConfig?.extra || {};
+  console.log('🔍 isSingleAgentMode check:', { singleAgent, extra: Constants.expoConfig?.extra });
   return !!singleAgent;
 };
 

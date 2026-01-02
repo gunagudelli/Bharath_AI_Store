@@ -19,13 +19,18 @@ jobs:
         with:
           node-version: 20
 
-      # 3️⃣ Install dependencies (NO legacy, NO fix)
+      # 3️⃣ Install dependencies with clean cache
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm ci --legacy-peer-deps
+          echo "Dependencies installed successfully"
 
-      # 4️⃣ Install EAS CLI only (Expo CLI via npx)
+      # 4️⃣ Install EAS CLI only
       - name: Install EAS CLI
-        run: npm install -g eas-cli@latest
+        run: |
+          npm install -g eas-cli@latest
+          echo "Verifying EAS CLI installation..."
+          npx eas --version
 
       # 5️⃣ Set Agent-specific environment variables
       - name: Configure Agent Environment
@@ -47,9 +52,6 @@ jobs:
       - name: Build APK with EAS
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EXPO_PUBLIC_AGENT_ID: ${{ github.event.client_payload.agentId }}
-          EXPO_PUBLIC_AGENT_NAME: ${{ github.event.client_payload.agentName }}
-          EXPO_PUBLIC_BUILD_ID: ${{ github.event.client_payload.buildId }}
         run: |
           echo "🔥 Building with environment variables:"
           echo "EXPO_PUBLIC_AGENT_ID: $EXPO_PUBLIC_AGENT_ID"
@@ -65,7 +67,7 @@ jobs:
       - name: Get APK Download URL
         id: get-apk
         run: |
-          sleep 10
+          echo "📥 Getting APK download URL..."
           APK_DATA=$(npx eas build:list --platform=android --limit=1 --json)
           echo "Raw APK data: $APK_DATA"
           APK_URL=$(echo "$APK_DATA" | jq -r '.[0].artifacts.buildUrl // empty')
@@ -86,15 +88,18 @@ jobs:
             echo "⚠️ WEBHOOK_URL not set, skipping notification"
             exit 0
           fi
-          curl -X POST "$WEBHOOK_URL/build-webhook" \
+          echo "📡 Notifying backend at: $WEBHOOK_URL"
+          curl -v -X POST "$WEBHOOK_URL/build-webhook" \
             -H "Content-Type: application/json" \
             -d '{
               "buildId": "${{ github.event.client_payload.buildId }}",
               "agentId": "${{ github.event.client_payload.agentId }}",
               "agentName": "${{ github.event.client_payload.agentName }}",
               "status": "completed",
-              "apkUrl": "${{ steps.get-apk.outputs.apk_url }}"
-            }'
+              "artifacts": {
+                "apkUrl": "${{ steps.get-apk.outputs.apk_url }}"
+              }
+            }' || echo "❌ Failed to notify backend"
 
       # 🔟 Notify backend on FAILURE
       - name: Notify Backend Failure

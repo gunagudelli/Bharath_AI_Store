@@ -26,7 +26,16 @@ function AppContent() {
   
   useEffect(() => {
     // Check if this is a single-agent APK
-    const singleAgentMode = Constants.expoConfig?.extra?.isSingleAgent;
+    const extra = Constants.expoConfig?.extra;
+    const singleAgentMode = extra?.singleAgent;
+    
+    console.log('🔍 Checking single-agent mode:', {
+      singleAgent: extra?.singleAgent,
+      agentId: extra?.agentId,
+      agentName: extra?.agentName,
+      buildId: extra?.buildId
+    });
+    
     setIsSingleAgent(!!singleAgentMode);
   }, []);
   
