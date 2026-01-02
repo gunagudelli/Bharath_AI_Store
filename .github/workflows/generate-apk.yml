@@ -23,14 +23,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # 4️⃣ Install Expo & EAS CLI
-      - name: Install Expo & EAS CLI
-        run: |
-          npm install -g @expo/cli@latest eas-cli@latest
-          npx expo install --fix
-          echo "Verifying installations..."
-          npx expo --version
-          npx eas --version
+      # 4️⃣ Install EAS CLI only (Expo CLI via npx)
+      - name: Install EAS CLI
+        run: npm install -g eas-cli@latest
 
       # 5️⃣ Set Agent-specific environment variables
       - name: Configure Agent Environment
@@ -52,6 +47,9 @@ jobs:
       - name: Build APK with EAS
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_AGENT_ID: ${{ github.event.client_payload.agentId }}
+          EXPO_PUBLIC_AGENT_NAME: ${{ github.event.client_payload.agentName }}
+          EXPO_PUBLIC_BUILD_ID: ${{ github.event.client_payload.buildId }}
         run: |
           echo "🔥 Building with environment variables:"
           echo "EXPO_PUBLIC_AGENT_ID: $EXPO_PUBLIC_AGENT_ID"
@@ -67,7 +65,7 @@ jobs:
       - name: Get APK Download URL
         id: get-apk
         run: |
-          echo "📥 Getting APK download URL..."
+          sleep 10
           APK_DATA=$(npx eas build:list --platform=android --limit=1 --json)
           echo "Raw APK data: $APK_DATA"
           APK_URL=$(echo "$APK_DATA" | jq -r '.[0].artifacts.buildUrl // empty')
