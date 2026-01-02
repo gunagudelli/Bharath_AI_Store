@@ -1,16 +1,37 @@
 // config/agent-config.ts - Agent-Specific Configuration
+import Constants from 'expo-constants';
+
+// Get values from both process.env and expo config
+const getAgentId = () => {
+  return process.env.EXPO_PUBLIC_AGENT_ID || 
+         Constants.expoConfig?.extra?.agentId || 
+         null;
+};
+
+const getAgentName = () => {
+  return process.env.EXPO_PUBLIC_AGENT_NAME || 
+         Constants.expoConfig?.extra?.agentName || 
+         null;
+};
+
+const getBuildId = () => {
+  return process.env.EXPO_PUBLIC_BUILD_ID || 
+         Constants.expoConfig?.extra?.buildId || 
+         null;
+};
+
 export const AGENT_CONFIG = {
   // 🔥 Injected during build process
-  id: process.env.EXPO_PUBLIC_AGENT_ID || null,
-  name: process.env.EXPO_PUBLIC_AGENT_NAME || null,
-  buildId: process.env.EXPO_PUBLIC_BUILD_ID || null,
+  id: getAgentId(),
+  name: getAgentName(),
+  buildId: getBuildId(),
   
   // 🔒 Agent Lock Mode
-  isLocked: !!process.env.EXPO_PUBLIC_AGENT_ID,
+  isLocked: !!getAgentId(),
   
   // 📱 App Branding
   getAppName: () => {
-    const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
+    const agentName = getAgentName();
     if (agentName && agentName !== '${EXPO_PUBLIC_AGENT_NAME}') {
       return `${agentName} AI`;
     }
@@ -19,7 +40,7 @@ export const AGENT_CONFIG = {
   
   // 🎯 Direct Chat URL
   getChatUrl: () => {
-    const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
+    const agentId = getAgentId();
     if (agentId && agentId !== '${EXPO_PUBLIC_AGENT_ID}') {
       return `/userflow/GenOxyChatScreen?agentId=${agentId}`;
     }
@@ -29,12 +50,13 @@ export const AGENT_CONFIG = {
   // 🔍 Debug function
   debug: () => {
     console.log('🔧 Agent Config:', {
-      buildId: process.env.EXPO_PUBLIC_BUILD_ID || null,
+      buildId: getBuildId(),
       getAppName: AGENT_CONFIG.getAppName(),
       getChatUrl: AGENT_CONFIG.getChatUrl(),
-      id: process.env.EXPO_PUBLIC_AGENT_ID || null,
-      isLocked: !!process.env.EXPO_PUBLIC_AGENT_ID,
-      name: process.env.EXPO_PUBLIC_AGENT_NAME || null
+      id: getAgentId(),
+      isLocked: !!getAgentId(),
+      name: getAgentName(),
+      expoConfig: Constants.expoConfig?.extra
     });
   }
 };
