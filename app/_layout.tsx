@@ -1,4 +1,4 @@
-// Main App Layout - Keep Original Multi-Agent Flow
+// Original App Layout - Restored
 import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { Text, View } from 'react-native';
@@ -6,6 +6,7 @@ import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import Constants from 'expo-constants';
 import { store, persistor } from './Redux/store/index';
+import SingleAgentMode from '../components/SingleAgentMode';
 
 const SplashScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E3F2FD' }}>
@@ -15,24 +16,13 @@ const SplashScreen = () => (
 
 function AppContent() {
   // Check if this is a single-agent APK build
-  const isSingleAgentBuild = Constants.expoConfig?.extra?.isSingleAgent;
+  const isSingleAgent = Constants.expoConfig?.extra?.isSingleAgent;
   
-  if (isSingleAgentBuild) {
-    // Single-agent template flow
-    return (
-      <Stack
-        screenOptions={{ headerShown: false }}
-        initialRouteName="(auth)"
-      >
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="dashboard" options={{ headerShown: false }} />
-        <Stack.Screen name="agent" options={{ headerShown: false }} />
-        <Stack.Screen name="chat" options={{ headerShown: false }} />
-      </Stack>
-    );
+  if (isSingleAgent) {
+    return <SingleAgentMode />;
   }
   
-  // Normal multi-agent app flow
+  // Normal multi-agent app flow (unchanged)
   return (
     <Stack
       screenOptions={{ headerShown: false }}
