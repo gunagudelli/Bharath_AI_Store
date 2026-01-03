@@ -34,14 +34,26 @@ const SingleAgentMode: React.FC = () => {
   useEffect(() => {
     logAgentConfig();
     
-    if (agentConfig.isSingleAgent && agentConfig.agentId) {
-      console.log('🔒 Single Agent Mode Activated:', agentConfig.agentName);
-      fetchAgentDetails();
-    } else {
-      console.log('🏦 Multi-Agent Store Mode - Redirecting');
-      // Not a single-agent APK, redirect to normal app
-      router.replace('/(screen)/(tabs)');
-    }
+    // FORCE TEST VALUES
+    const FORCE_AGENT_ID = "asst_fkiCCNMDNbdimrK4EbRUhf87";
+    const FORCE_AGENT_NAME = "Ankitha-ConnectCatalyst";
+    
+    console.log('🔒 FORCED Single Agent Mode:', FORCE_AGENT_NAME);
+    
+    // Skip API call, directly set test agent
+    const testAgent = {
+      id: FORCE_AGENT_ID,
+      name: FORCE_AGENT_NAME,
+      description: "Test agent for single-agent mode"
+    };
+    
+    setAgent(testAgent);
+    setLoading(false);
+    
+    // Auto-navigate after 2 seconds
+    setTimeout(() => {
+      navigateToAgent(testAgent);
+    }, 2000);
   }, []);
 
   const fetchAgentDetails = async () => {
