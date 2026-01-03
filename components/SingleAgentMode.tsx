@@ -1,48 +1,98 @@
-// components/SingleAgentMode.tsx - Simple working version
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+// components/SingleAgentMode.tsx - ACTUALLY WORKING VERSION
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useSelector } from 'react-redux';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 
+interface Agent {
+  id: string;
+  name: string;
+  description?: string;
+  theme: string;
+}
+
 const SingleAgentMode: React.FC = () => {
   const userData = useSelector((state: any) => state.userData);
   const isAuthenticated = !!userData?.accessToken;
-  
-  // Get agent config from build-time injection
-  const agentName = Constants.expoConfig?.extra?.agentName || 
-                   process.env.EXPO_PUBLIC_AGENT_NAME || 
-                   'AI Assistant';
-  const agentTheme = Constants.expoConfig?.extra?.agentTheme || 
-                    process.env.EXPO_PUBLIC_AGENT_THEME || 
-                    '#3d2a71';
-  const agentId = Constants.expoConfig?.extra?.agentId || 
-                 process.env.EXPO_PUBLIC_AGENT_ID;
+  const [agent, setAgent] = useState<Agent | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace('/(auth)/welcome');
+      return;
     }
+    
+    // CRITICAL: Get the ACTUAL agent data from your automation
+    loadAgentFromAutomation();
   }, [isAuthenticated]);
+
+  const loadAgentFromAutomation = () => {
+    // Method 1: From expo config (set by your automation)
+    const automationAgent = Constants.expoConfig?.extra?.automationAgent;
+    
+    // Method 2: From environment (backup)
+    const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
+    const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
+    
+    console.log('🔍 Automation Agent:', automationAgent);
+    console.log('🔍 Env Agent Name:', agentName);
+    console.log('🔍 Env Agent ID:', agentId);
+    
+    if (automationAgent) {
+      // Use automation-provided agent data
+      setAgent({
+        id: automationAgent.id,
+        name: automationAgent.name,
+        description: automationAgent.description || 'Your AI assistant',
+        theme: automationAgent.theme || '#3d2a71'
+      });
+    } else if (agentName && agentId) {
+      // Fallback to environment variables
+      setAgent({
+        id: agentId,
+        name: agentName,
+        description: 'Your AI assistant',
+        theme: '#3d2a71'
+      });
+    } else {
+      // Show error - automation failed
+      Alert.alert(
+        'Configuration Error',
+        'Agent not properly configured in this APK. Please contact support.',
+        [{ text: 'OK', onPress: () => router.push('/(screen)/(tabs)') }]
+      );
+    }
+  };
 
   if (!isAuthenticated) {
     return null;
   }
 
-  const handleStartChat = () => {
-    if (!agentId) {
-      alert('Agent not configured properly');
-      return;
-    }
+  if (!agent) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LinearGradient colors={['#E3F2FD', '#BBDEFB']} style={styles.gradient}>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Agent Configuration Missing</Text>
+            <Text style={styles.errorSubtext}>This APK was not properly configured</Text>
+          </View>
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
 
+  const handleStartChat = () => {
+    console.log('🚀 Starting chat with agent:', agent.id, agent.name);
+    
     router.push({
       pathname: '/(screen)/userflow/GenOxyChatScreen',
       params: {
-        assistantId: agentId,
-        agentName: agentName,
+        assistantId: agent.id,
+        agentName: agent.name,
         category: "Assistant",
-        title: `Chat with ${agentName}`,
+        title: `Chat with ${agent.name}`,
         query: "",
       }
     });
@@ -54,27 +104,22 @@ const SingleAgentMode: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#E3F2FD', '#BBDEFB']}
-        style={styles.gradient}
-      >
+      <LinearGradient colors={['#E3F2FD', '#BBDEFB']} style={styles.gradient}>
         <View style={styles.header}>
           <Text style={styles.welcomeText}>Welcome to</Text>
-          <Text style={styles.appTitle}>{agentName}</Text>
+          <Text style={styles.appTitle}>{agent.name}</Text>
         </View>
 
         <View style={styles.content}>
           <View style={styles.agentCard}>
-            <View style={[styles.agentIcon, { backgroundColor: agentTheme }]}>
+            <View style={[styles.agentIcon, { backgroundColor: agent.theme }]}>
               <Text style={styles.agentIconText}>AI</Text>
             </View>
-            <Text style={styles.agentName}>{agentName}</Text>
-            <Text style={styles.agentDescription}>
-              Your dedicated AI assistant, ready to help with any questions.
-            </Text>
+            <Text style={styles.agentName}>{agent.name}</Text>
+            <Text style={styles.agentDescription}>{agent.description}</Text>
             
             <TouchableOpacity 
-              style={[styles.chatButton, { backgroundColor: agentTheme }]}
+              style={[styles.chatButton, { backgroundColor: agent.theme }]}
               onPress={handleStartChat}
               activeOpacity={0.8}
             >
@@ -96,11 +141,24 @@ const SingleAgentMode: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1 },
+  gradient: { flex: 1 },
+  errorContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  gradient: {
-    flex: 1,
+  errorText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#DC2626',
+    marginBottom: 8,
+  },
+  errorSubtext: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
   header: {
     alignItems: 'center',
