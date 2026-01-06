@@ -1,4 +1,4 @@
-// Original App Layout - Restored
+// Original App Layout - Fixed Single Agent Detection
 import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { Text, View } from 'react-native';
@@ -15,8 +15,8 @@ const SplashScreen = () => (
 );
 
 function AppContent() {
-  // Check if this is a single-agent APK build
-  const isSingleAgent = Constants.expoConfig?.extra?.singleAgent;
+  // Simplified single-agent detection
+  const isSingleAgent = !!(process.env.EXPO_PUBLIC_AGENT_ID || Constants.expoConfig?.extra?.agentId);
   
   if (isSingleAgent) {
     return <SingleAgentMode />;

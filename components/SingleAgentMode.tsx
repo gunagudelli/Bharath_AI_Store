@@ -1,4 +1,4 @@
-// components/SingleAgentMode.tsx - FINAL APK AUTOMATION TEMPLATE (SECURE)
+// components/SingleAgentMode.tsx - SIMPLIFIED FOR RELIABILITY
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, SafeAreaView } from 'react-native';
 import axios from 'axios';
@@ -8,34 +8,14 @@ import { router } from 'expo-router';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 
-interface Agent {
-  id: string;
-  assistantId?: string;
-  agentId?: string;
-  name: string;
-  description?: string;
-  instructions?: string;
-}
-
-interface UserData {
-  accessToken: string;
-}
-
 const SingleAgentMode: React.FC = () => {
-  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const userData = useSelector((state: { userData: UserData }) => state.userData);
+  const userData = useSelector((state: any) => state.userData);
 
   // Get selected agent ID from automation process
-  const getSelectedAgentId = (): string | null => {
-    const agentId = Constants.expoConfig?.extra?.selectedAgentId || 
-                   Constants.expoConfig?.extra?.agentId ||
-                   process.env.EXPO_PUBLIC_SELECTED_AGENT_ID;
-    
-    // Sanitize agent ID for logging (prevent log injection)
-    const sanitizedId = agentId ? String(agentId).replace(/[\r\n]/g, '') : null;
-    console.log('🆔 Selected Agent ID from automation:', sanitizedId);
-    return agentId || null;
+  const getSelectedAgentId = () => {
+    return process.env.EXPO_PUBLIC_AGENT_ID || Constants.expoConfig?.extra?.agentId;
   };
 
   useEffect(() => {
@@ -47,7 +27,7 @@ const SingleAgentMode: React.FC = () => {
     fetchSelectedAgent();
   }, [userData?.accessToken]);
 
-  const fetchSelectedAgent = async (): Promise<void> => {
+  const fetchSelectedAgent = async () => {
     try {
       setLoading(true);
       const agentId = getSelectedAgentId();
@@ -65,35 +45,33 @@ const SingleAgentMode: React.FC = () => {
         },
       });
 
-      const agents: Agent[] = response.data?.data || [];
+      const agents = response.data?.data || [];
       
-      const agent = agents.find((a: Agent) => 
+      const agent = agents.find((a: any) => 
         a.id === agentId || 
         a.assistantId === agentId ||
         a.agentId === agentId
       );
 
       if (agent) {
-        // Sanitize agent name for logging
-        const sanitizedName = agent.name.replace(/[\r\n]/g, '');
-        console.log('✅ Found selected agent:', sanitizedName);
+        console.log('✅ Found selected agent:', agent.name);
         setSelectedAgent(agent);
       } else {
         console.log('❌ Selected agent not found');
       }
       
     } catch (error) {
-      console.error('❌ Error fetching selected agent:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('❌ Error fetching selected agent:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const openAgentChat = (): void => {
+  const openAgentChat = () => {
     if (!selectedAgent) return;
     
     const assistantId = selectedAgent.id || selectedAgent.assistantId;
-    console.log('🚀 Opening chat for agent');
+    console.log('🚀 Opening chat for agent:', selectedAgent.name);
     
     router.push({
       pathname: '/(screen)/userflow/GenOxyChatScreen',
