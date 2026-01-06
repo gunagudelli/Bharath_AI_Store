@@ -85,15 +85,19 @@ const SingleAgentMode: React.FC = () => {
 
   const handleStartChat = () => {
     console.log('🚀 Starting chat with agent:', agent.id, agent.name);
+    console.log('🔑 User token:', userData?.accessToken ? 'Present' : 'Missing');
     
+    // Use the EXACT same navigation as your normal app
     router.push({
       pathname: '/(screen)/userflow/GenOxyChatScreen',
       params: {
         assistantId: agent.id,
-        agentName: agent.name,
-        category: "Assistant",
-        title: `Chat with ${agent.name}`,
         query: "",
+        category: "Assistant",
+        agentName: agent.name,
+        fd: null,
+        agentId: agent.id, // Some screens might need this
+        title: agent.name,
       }
     });
   };
