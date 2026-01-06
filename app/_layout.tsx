@@ -16,7 +16,7 @@ const SplashScreen = () => (
 
 function AppContent() {
   // Check if this is a single-agent APK build
-  const isSingleAgent = Constants.expoConfig?.extra?.isSingleAgent;
+  const isSingleAgent = Constants.expoConfig?.extra?.singleAgent;
   
   if (isSingleAgent) {
     return <SingleAgentMode />;
