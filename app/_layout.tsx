@@ -1,9 +1,9 @@
-// Original App Layout - Fixed Single Agent Detection
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Stack } from 'expo-router';
 import { Text, View } from 'react-native';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import { store, persistor } from './Redux/store/index';
 import SingleAgentMode from '../components/SingleAgentMode';
@@ -15,19 +15,15 @@ const SplashScreen = () => (
 );
 
 function AppContent() {
-  // Simplified single-agent detection
-  const isSingleAgent = !!(process.env.EXPO_PUBLIC_AGENT_ID || Constants.expoConfig?.extra?.agentId);
+  const agentId = process.env.EXPO_PUBLIC_AGENT_ID || Constants.expoConfig?.extra?.agentId;
+  const isSingleAgent = !!agentId;
   
   if (isSingleAgent) {
     return <SingleAgentMode />;
   }
   
-  // Normal multi-agent app flow (unchanged)
   return (
-    <Stack
-      screenOptions={{ headerShown: false }}
-      initialRouteName="(auth)"
-    >
+    <Stack screenOptions={{ headerShown: false }} initialRouteName="(auth)">
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(screen)" options={{ headerShown: false }} />
     </Stack>
@@ -36,10 +32,12 @@ function AppContent() {
 
 export default function RootLayout() {
   return (
-    <Provider store={store}>
-      <PersistGate loading={<SplashScreen />} persistor={persistor}>
-        <AppContent />
-      </PersistGate>
-    </Provider>
+    <SafeAreaProvider>
+      <Provider store={store}>
+        <PersistGate loading={<SplashScreen />} persistor={persistor}>
+          <AppContent />
+        </PersistGate>
+      </Provider>
+    </SafeAreaProvider>
   );
 }

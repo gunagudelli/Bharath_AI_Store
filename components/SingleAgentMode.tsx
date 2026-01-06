@@ -1,6 +1,6 @@
-// components/SingleAgentMode.tsx - SIMPLIFIED FOR RELIABILITY
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import BASE_URL from '../config';
 import { useSelector } from 'react-redux';
@@ -11,9 +11,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 const SingleAgentMode: React.FC = () => {
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const userData = useSelector((state: any) => state.userData);
 
-  // Get selected agent ID from automation process
   const getSelectedAgentId = () => {
     return process.env.EXPO_PUBLIC_AGENT_ID || Constants.expoConfig?.extra?.agentId;
   };
@@ -23,7 +23,6 @@ const SingleAgentMode: React.FC = () => {
       router.replace('/(auth)/welcome');
       return;
     }
-    
     fetchSelectedAgent();
   }, [userData?.accessToken]);
 
@@ -33,7 +32,7 @@ const SingleAgentMode: React.FC = () => {
       const agentId = getSelectedAgentId();
       
       if (!agentId) {
-        console.log('❌ No agent ID provided by automation');
+        setError('No agent ID provided');
         setLoading(false);
         return;
       }
@@ -46,22 +45,17 @@ const SingleAgentMode: React.FC = () => {
       });
 
       const agents = response.data?.data || [];
-      
       const agent = agents.find((a: any) => 
-        a.id === agentId || 
-        a.assistantId === agentId ||
-        a.agentId === agentId
+        a.id === agentId || a.assistantId === agentId || a.agentId === agentId
       );
 
       if (agent) {
-        console.log('✅ Found selected agent:', agent.name);
         setSelectedAgent(agent);
       } else {
-        console.log('❌ Selected agent not found');
+        setError(`Agent not found`);
       }
-      
     } catch (error) {
-      console.error('❌ Error fetching selected agent:', error);
+      setError('Failed to load agent');
     } finally {
       setLoading(false);
     }
@@ -71,8 +65,6 @@ const SingleAgentMode: React.FC = () => {
     if (!selectedAgent) return;
     
     const assistantId = selectedAgent.id || selectedAgent.assistantId;
-    console.log('🚀 Opening chat for agent:', selectedAgent.name);
-    
     router.push({
       pathname: '/(screen)/userflow/GenOxyChatScreen',
       params: {
@@ -80,7 +72,6 @@ const SingleAgentMode: React.FC = () => {
         query: "",
         category: "Assistant",
         agentName: selectedAgent.name,
-        fd: null,
         agentId: assistantId,
         title: selectedAgent.name,
       }
@@ -91,8 +82,10 @@ const SingleAgentMode: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <LinearGradient colors={['#E3F2FD', '#BBDEFB']} style={styles.gradient}>
-          <ActivityIndicator size="large" color="#3d2a71" />
-          <Text style={styles.loadingText}>Loading your agent...</Text>
+          <View style={styles.centerContent}>
+            <ActivityIndicator size="large" color="#3d2a71" />
+            <Text style={styles.loadingText}>Loading your agent...</Text>
+          </View>
         </LinearGradient>
       </SafeAreaView>
     );
@@ -104,7 +97,10 @@ const SingleAgentMode: React.FC = () => {
         <LinearGradient colors={['#E3F2FD', '#BBDEFB']} style={styles.gradient}>
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>Agent not found</Text>
-            <Text style={styles.errorSubtext}>The selected agent could not be loaded</Text>
+            <Text style={styles.errorSubtext}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchSelectedAgent}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
           </View>
         </LinearGradient>
       </SafeAreaView>
@@ -126,16 +122,11 @@ const SingleAgentMode: React.FC = () => {
             </View>
             
             <Text style={styles.agentName}>{selectedAgent.name}</Text>
-            
             <Text style={styles.agentDescription}>
               {selectedAgent.description || selectedAgent.instructions || 'Your AI assistant'}
             </Text>
             
-            <TouchableOpacity 
-              style={styles.chatButton} 
-              onPress={openAgentChat}
-              activeOpacity={0.8}
-            >
+            <TouchableOpacity style={styles.chatButton} onPress={openAgentChat}>
               <Text style={styles.chatButtonText}>Start Conversation</Text>
             </TouchableOpacity>
           </View>
@@ -151,6 +142,11 @@ const styles = StyleSheet.create({
   },
   gradient: {
     flex: 1,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loadingText: {
     marginTop: 16,
@@ -253,6 +249,18 @@ const styles = StyleSheet.create({
   chatButtonText: {
     color: 'white',
     fontSize: 18,
+    fontWeight: 'bold',
+  },
+  retryButton: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 15,
+    marginTop: 16,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });
