@@ -4,9 +4,7 @@ import { Text, View } from 'react-native';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import Constants from 'expo-constants';
 import { store, persistor } from './Redux/store/index';
-import SingleAgentMode from '../components/SingleAgentMode';
 
 const SplashScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E3F2FD' }}>
@@ -15,13 +13,6 @@ const SplashScreen = () => (
 );
 
 function AppContent() {
-  const agentId = process.env.EXPO_PUBLIC_AGENT_ID || Constants.expoConfig?.extra?.agentId;
-  const isSingleAgent = !!agentId;
-  
-  if (isSingleAgent) {
-    return <SingleAgentMode />;
-  }
-  
   return (
     <Stack screenOptions={{ headerShown: false }} initialRouteName="(auth)">
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />

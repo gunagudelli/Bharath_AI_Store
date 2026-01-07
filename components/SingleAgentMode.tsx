@@ -1,81 +1,158 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import axios from 'axios';
-import BASE_URL from '../config';
 import { useSelector } from 'react-redux';
 import { router } from 'expo-router';
-import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
+import Constants from 'expo-constants';
+import axios from 'axios';
+import BASE_URL from '../config';
+
+interface Agent {
+  id?: string;
+  assistantId?: string;
+  agentId?: string;
+  name: string;
+  description?: string;
+  instructions?: string;
+}
 
 const SingleAgentMode: React.FC = () => {
-  const [selectedAgent, setSelectedAgent] = useState<any>(null);
+  const [agent, setAgent] = useState<Agent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
   const userData = useSelector((state: any) => state.userData);
-
-  const getSelectedAgentId = () => {
-    return process.env.EXPO_PUBLIC_AGENT_ID || Constants.expoConfig?.extra?.agentId;
-  };
-
+  
   useEffect(() => {
-    if (!userData?.accessToken) {
-      router.replace('/(auth)/welcome');
-      return;
+    if (userData?.accessToken) {
+      fetchAgent();
+    } else {
+      setError('Authentication required');
+      setLoading(false);
     }
-    fetchSelectedAgent();
-  }, [userData?.accessToken]);
+  }, [userData]);
 
-  const fetchSelectedAgent = async () => {
+  const fetchAgent = async () => {
     try {
       setLoading(true);
-      const agentId = getSelectedAgentId();
+      setError(null);
       
-      if (!agentId) {
-        setError('No agent ID provided');
-        setLoading(false);
-        return;
+      // Get agent ID from environment variables
+      const envAgentId = process.env.EXPO_PUBLIC_AGENT_ID;
+      const constantsAgentId = Constants.expoConfig?.extra?.agentId;
+      const targetAgentId = envAgentId || constantsAgentId;
+      
+      console.log('🔍 Fetching agent:', {
+        envAgentId,
+        constantsAgentId,
+        targetAgentId,
+        hasToken: !!userData?.accessToken
+      });
+
+      if (!targetAgentId) {
+        throw new Error('Agent ID not found in configuration');
       }
 
+      // Fetch all agents from API
       const response = await axios.get(`${BASE_URL}ai-service/agent/getAllAssistants?limit=100`, {
         headers: {
           Accept: "*/*",
           Authorization: userData.accessToken,
         },
+        timeout: 10000,
       });
 
       const agents = response.data?.data || [];
-      const agent = agents.find((a: any) => 
-        a.id === agentId || a.assistantId === agentId || a.agentId === agentId
+      console.log('📊 Available agents:', agents.length);
+      
+      // Find the target agent
+      const foundAgent = agents.find((a: any) => 
+        a.id === targetAgentId || 
+        a.assistantId === targetAgentId || 
+        a.agentId === targetAgentId
       );
 
-      if (agent) {
-        setSelectedAgent(agent);
+      if (foundAgent) {
+        console.log('✅ Found agent:', foundAgent.name);
+        setAgent({
+          id: foundAgent.id,
+          assistantId: foundAgent.assistantId,
+          agentId: foundAgent.agentId,
+          name: foundAgent.name,
+          description: foundAgent.description || foundAgent.instructions,
+        });
       } else {
-        setError(`Agent not found`);
+        // Fallback to environment variable name if agent not found
+        const envAgentName = process.env.EXPO_PUBLIC_AGENT_NAME || Constants.expoConfig?.extra?.agentName;
+        console.log('⚠️ Agent not found in API, using fallback');
+        setAgent({
+          assistantId: targetAgentId,
+          name: envAgentName || 'AI Assistant',
+          description: 'Your AI assistant',
+        });
       }
-    } catch (error) {
-      setError('Failed to load agent');
+    } catch (error: any) {
+      console.error('❌ Error fetching agent:', error);
+      
+      // Fallback to environment variables
+      const envAgentId = process.env.EXPO_PUBLIC_AGENT_ID || Constants.expoConfig?.extra?.agentId;
+      const envAgentName = process.env.EXPO_PUBLIC_AGENT_NAME || Constants.expoConfig?.extra?.agentName;
+      
+      if (envAgentId && envAgentName) {
+        console.log('🔄 Using environment fallback');
+        setAgent({
+          assistantId: envAgentId,
+          name: envAgentName,
+          description: 'Your AI assistant',
+        });
+      } else {
+        setError('Failed to load agent configuration');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const openAgentChat = () => {
-    if (!selectedAgent) return;
+    if (!agent) {
+      Alert.alert('Error', 'Agent not loaded');
+      return;
+    }
+
+    if (!userData?.accessToken) {
+      Alert.alert('Authentication Required', 'Please log in to continue.');
+      return;
+    }
     
-    const assistantId = selectedAgent.id || selectedAgent.assistantId;
-    router.push({
-      pathname: '/(screen)/userflow/GenOxyChatScreen',
-      params: {
-        assistantId: assistantId,
-        query: "",
-        category: "Assistant",
-        agentName: selectedAgent.name,
-        agentId: assistantId,
-        title: selectedAgent.name,
-      }
+    const agentId = agent.assistantId || agent.id || agent.agentId;
+    
+    console.log('💬 Opening chat with:', {
+      assistantId: agentId,
+      agentName: agent.name,
+      agentId: agentId
     });
+    
+    try {
+      router.push({
+        pathname: '/(screen)/userflow/GenOxyChatScreen',
+        params: {
+          assistantId: agentId,
+          query: "",
+          category: "Assistant",
+          agentName: agent.name,
+          agentId: agentId,
+          title: agent.name,
+        }
+      });
+    } catch (error) {
+      console.error('Navigation error:', error);
+      Alert.alert('Navigation Error', 'Could not open chat. Please try again.');
+    }
+  };
+
+  const handleRetry = () => {
+    fetchAgent();
   };
 
   if (loading) {
@@ -84,21 +161,20 @@ const SingleAgentMode: React.FC = () => {
         <LinearGradient colors={['#E3F2FD', '#BBDEFB']} style={styles.gradient}>
           <View style={styles.centerContent}>
             <ActivityIndicator size="large" color="#3d2a71" />
-            <Text style={styles.loadingText}>Loading your agent...</Text>
+            <Text style={styles.loadingText}>Loading agent...</Text>
           </View>
         </LinearGradient>
       </SafeAreaView>
     );
   }
 
-  if (!selectedAgent) {
+  if (error || !agent) {
     return (
       <SafeAreaView style={styles.container}>
         <LinearGradient colors={['#E3F2FD', '#BBDEFB']} style={styles.gradient}>
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>Agent not found</Text>
-            <Text style={styles.errorSubtext}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={fetchSelectedAgent}>
+          <View style={styles.centerContent}>
+            <Text style={styles.errorText}>⚠️ {error || 'Agent not found'}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
               <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
           </View>
@@ -112,7 +188,7 @@ const SingleAgentMode: React.FC = () => {
       <LinearGradient colors={['#E3F2FD', '#BBDEFB']} style={styles.gradient}>
         <View style={styles.header}>
           <Text style={styles.welcomeText}>Welcome to</Text>
-          <Text style={styles.appTitle}>{selectedAgent.name}</Text>
+          <Text style={styles.appTitle}>{agent.name}</Text>
         </View>
 
         <View style={styles.content}>
@@ -121,9 +197,9 @@ const SingleAgentMode: React.FC = () => {
               <Text style={styles.agentIconText}>AI</Text>
             </View>
             
-            <Text style={styles.agentName}>{selectedAgent.name}</Text>
+            <Text style={styles.agentName}>{agent.name}</Text>
             <Text style={styles.agentDescription}>
-              {selectedAgent.description || selectedAgent.instructions || 'Your AI assistant'}
+              {agent.description || 'Your AI assistant'}
             </Text>
             
             <TouchableOpacity style={styles.chatButton} onPress={openAgentChat}>
@@ -147,6 +223,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   loadingText: {
     marginTop: 16,
@@ -154,22 +231,22 @@ const styles = StyleSheet.create({
     color: '#3d2a71',
     textAlign: 'center',
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
   errorText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#DC2626',
-    marginBottom: 8,
-  },
-  errorSubtext: {
     fontSize: 16,
-    color: '#666',
+    color: '#d32f2f',
     textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#3d2a71',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   header: {
     alignItems: 'center',
@@ -249,18 +326,6 @@ const styles = StyleSheet.create({
   chatButtonText: {
     color: 'white',
     fontSize: 18,
-    fontWeight: 'bold',
-  },
-  retryButton: {
-    backgroundColor: '#DC2626',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 15,
-    marginTop: 16,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontSize: 16,
     fontWeight: 'bold',
   },
 });
