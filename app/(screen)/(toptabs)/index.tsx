@@ -25,6 +25,7 @@ import { useSelector } from "react-redux";
 import APKBuildStatus from "../../../components/APKBuildStatus";
 import BuildTestPanel from "../../../components/BuildTestPanel";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isSingleAgentMode, filterAgentsForMode } from '../../../utils/singleAgentMode';
 const { width } = Dimensions.get("window");
 
 interface AgentItem {
@@ -54,16 +55,16 @@ interface ApiResponse {
 const WEB_IMAGE = "https://via.placeholder.com/300x200/8B5CF6/FFFFFF?text=🔍+Web"; // Placeholder for web results
 
 const CUSTOM_AGENTS: AgentItem[] = [
-  // {
-  // id: "custom-1",
-  // name: "THE FAN OF OG",
-  // description: "Create Your OG IMAGE. Just Upload Your Photo",
-  // instructions: "Create Your OG IMAGE. Just Upload Your Photo",
-  // status: "APPROVED",
-  // price: "Free",
-  // rating: 5,
-  // image: "https://i.ibb.co/h1fpCXzw/fanofog.png", // optional
-  // },
+  {
+    id: "custom-1",
+    name: "THE FAN OF OG",
+    description: "Create Your OG IMAGE. Just Upload Your Photo",
+    instructions: "Create Your OG IMAGE. Just Upload Your Photo",
+    status: "APPROVED",
+    price: "Free",
+    rating: 5,
+    image: "https://i.ibb.co/h1fpCXzw/fanofog.png", // optional
+  },
 ];
 
 const BharathAgentstore: React.FC = () => {
@@ -96,15 +97,15 @@ const BharathAgentstore: React.FC = () => {
 
   // Fetch agents (unchanged)
   const getAgents = async (afterId: string | null = null, append: boolean = false): Promise<void> => {
-    // console.log("Fetching agents, afterId:", afterId, "append:", append);
+    console.log("Fetching agents, afterId:", afterId, "append:", append);
     try {
       if (!append) {
         setLoading(true);
       } else {
         setLoadingMore(true);
       }
-      let url = `${BASE_URL}ai-service/agent/getAllAssistants?limit=40`;
-      // console.log("Fetch URL:", url);
+      let url = `${BASE_URL}ai-service/agent/getAllAssistants?limit=50`;
+      console.log("Fetch URL:", url);
       if (afterId) {
         url += `&after=${afterId}`;
       }
@@ -114,11 +115,22 @@ const BharathAgentstore: React.FC = () => {
           Authorization: userData?.accessToken || "",
         },
       });
+      console.log("Fetch agents response:", response.data);
+      console.log("Response status:", response.status);
+      
       const result: ApiResponse = response.data;
       if (result?.data && Array.isArray(result.data)) {
+        console.log("Raw agents from API:", result.data.length);
+        
         const approvedAgents: AgentItem[] = result.data.filter(
-          (agent: AgentItem) => agent.status === "APPROVED"
+          (agent: AgentItem) => {
+            console.log("Agent status:", agent.status, "Name:", agent.name);
+            return agent.status === "APPROVED";
+          }
         );
+        
+        console.log("Approved agents:", approvedAgents.length);
+        
         let agentsWithCustom: AgentItem[];
         // ✅ Always prepend custom agents
         if (!lastId) {
@@ -134,13 +146,14 @@ const BharathAgentstore: React.FC = () => {
         }
         setLastId(nextCursor);
         if (result.totalCount !== undefined) setTotalCount(result.totalCount);
-        // console.log("Approved agents + custom loaded:", agentsWithCustom.length);
+        console.log("Final agents loaded:", agentsWithCustom.length);
       } else {
-        console.log("No data received or invalid format");
+        console.log("No data received or invalid format. Response:", result);
         if (!append) setAgents([]);
       }
     } catch (error) {
       console.error("Fetch agents error:", error);
+      console.error("Error details:", error.response?.data);
       Alert.alert("Error", "Failed to load assistants.");
       if (!afterId) setAgents([]);
     } finally {
@@ -288,14 +301,34 @@ const BharathAgentstore: React.FC = () => {
   // Updated: Local filtering (always applies search to agents)
   useEffect(() => {
     console.log("Filtering local agents, total:", agents.length);
-    const filtered: AgentItem[] = agents.filter((agent: AgentItem) => {
+    console.log("Sample agent data:", agents[0]); // Debug log
+    console.log("Single agent mode:", isSingleAgentMode());
+    
+    let filtered: AgentItem[] = agents.filter((agent: AgentItem) => {
       const a: AgentItem = agent.assistant || agent;
-      const text: string =
-        `${a.name} ${a.instructions} ${a.description} ${a.model}`.toLowerCase();
-      return text.includes(search.toLowerCase());
+      
+      // More robust text search - handle undefined values
+      const searchableText = [
+        a.name || '',
+        a.instructions || '',
+        a.description || '',
+        a.model || ''
+      ].join(' ').toLowerCase();
+      
+      const searchTerm = search.toLowerCase().trim();
+      
+      // If no search term, show all agents
+      if (!searchTerm) return true;
+      
+      return searchableText.includes(searchTerm);
     });
+    
+    // 🔥 CRITICAL: Filter for single-agent mode in production APKs
+    filtered = filterAgentsForMode(filtered);
+    
     setLocalAgents(filtered);
     console.log("Local filtered agents:", filtered.length);
+    console.log("Search term:", search);
   }, [agents, search]);
 
   // New: Debounced web search effect
@@ -824,9 +857,11 @@ const renderAgentCard = ({ item }: { item: AgentItem }): React.ReactElement => {
     return status === "active" ? "#10B981" : "#64748B";
   };
 
-  // Updated: Display data logic
+  // Updated: Display data logic with single-agent safety
   const displayAgents = search.trim() ? searchResults : localAgents;
-  const shouldShowLoadMore: boolean = !!lastId && agents.length > 0 && !search.trim();
+  const shouldShowLoadMore: boolean = !!lastId && agents.length > 0 && !search.trim() && !isSingleAgentMode();
+  const shouldShowSearch: boolean = !isSingleAgentMode(); // Hide search in single-agent mode
+  const shouldShowTestPanel: boolean = !isSingleAgentMode(); // Hide test panel in production
 
   const renderEmpty = (): React.ReactElement => (
     <View style={styles.emptyContainer}>
@@ -854,37 +889,37 @@ const renderAgentCard = ({ item }: { item: AgentItem }): React.ReactElement => {
   // Updated: Header with search loading indicator
   const renderHeader = (): React.ReactElement => (
     <View style={styles.headerContainer}>
-      {/* Enhanced Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search AI assistants..."
-            placeholderTextColor="#94A3B8"
-            value={search}
-            onChangeText={setSearch}
-            autoCapitalize="none"
-          />
-          {searchLoading && <ActivityIndicator size="small" color="#8B5CF6" style={styles.loadingIndicator} />}
-          {search.length > 0 && !searchLoading && (
-            <TouchableOpacity onPress={() => setSearch("")}>
-              <Text style={styles.clearIcon}>✕</Text>
-            </TouchableOpacity>
-          )}
+      {/* Enhanced Search Bar - Only show in multi-agent mode */}
+      {shouldShowSearch && (
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Text style={styles.searchIcon}>🔍</Text>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search AI assistants..."
+              placeholderTextColor="#94A3B8"
+              value={search}
+              onChangeText={setSearch}
+              autoCapitalize="none"
+            />
+            {searchLoading && <ActivityIndicator size="small" color="#8B5CF6" style={styles.loadingIndicator} />}
+            {search.length > 0 && !searchLoading && (
+              <TouchableOpacity onPress={() => setSearch("")}>
+                <Text style={styles.clearIcon}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-      </View>
-      {/* <TouchableOpacity
-        onPress={() => router.push("/(auth)/register")}
-      >
-        <AIRoleImage />
-      </TouchableOpacity> */}
-      {/* Stats & View Toggle */}
+      )}
+      
+      {/* Stats & View Toggle - Simplified for single-agent */}
       <View style={styles.statsContainer}>
         <Text style={styles.statsText}>
-          {search.trim() 
-            ? `${searchResults.length} result${searchResults.length !== 1 ? "s" : ""}`
-            : `${localAgents.length} assistant${localAgents.length !== 1 ? "s" : ""} available`
+          {isSingleAgentMode() 
+            ? "Your AI Assistant" 
+            : search.trim() 
+              ? `${searchResults.length} result${searchResults.length !== 1 ? "s" : ""}`
+              : `${localAgents.length} assistant${localAgents.length !== 1 ? "s" : ""} available`
           }
         </Text>
         <View style={styles.viewToggle}>
@@ -893,38 +928,6 @@ const renderAgentCard = ({ item }: { item: AgentItem }): React.ReactElement => {
             color="#8B5CF6"
             animating={loadingMore}
           />
-          {/* <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              viewMode === "list" && styles.toggleButtonActive,
-            ]}
-            onPress={() => setViewMode("list")}
-          >
-            <Text
-              style={[
-                styles.toggleIcon,
-                viewMode === "list" && styles.toggleIconActive,
-              ]}
-            >
-              ☰
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              viewMode === "grid" && styles.toggleButtonActive,
-            ]}
-            onPress={() => setViewMode("grid")}
-          >
-            <Text
-              style={[
-                styles.toggleIcon,
-                viewMode === "grid" && styles.toggleIconActive,
-              ]}
-            >
-              ⊞
-            </Text>
-          </TouchableOpacity> */}
         </View>
       </View>
     </View>
@@ -949,12 +952,14 @@ const renderAgentCard = ({ item }: { item: AgentItem }): React.ReactElement => {
       {renderHeader()}
       
       {/* 🧪 Test Panel Button (Development Only) */}
-      <TouchableOpacity 
-        style={styles.testButton}
-        onPress={() => setShowTestPanel(true)}
-      >
-        <Text style={styles.testButtonText}>🧪 Test Builds</Text>
-      </TouchableOpacity>
+      {shouldShowTestPanel && (
+        <TouchableOpacity 
+          style={styles.testButton}
+          onPress={() => setShowTestPanel(true)}
+        >
+          <Text style={styles.testButtonText}>🧪 Test Builds</Text>
+        </TouchableOpacity>
+      )}
       {/* Enhanced Grid/List */}
       <View style={styles.contentContainer}>
         <FlatList<AgentItem>
