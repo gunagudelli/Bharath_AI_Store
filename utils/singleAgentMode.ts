@@ -2,17 +2,16 @@ import Constants from 'expo-constants';
 
 // 🔥 ROBUST single-agent detection
 export const isSingleAgentMode = (): boolean => {
-  const envAgentId = process.env.EXPO_PUBLIC_AGENT_ID;
+  // 🔥 SAFE: Use Constants instead of process.env in components
   const constantsAgentId = Constants.expoConfig?.extra?.agentId;
   const manifestAgentId = Constants.manifest?.extra?.agentId;
   
-  const agentId = envAgentId || constantsAgentId || manifestAgentId;
+  const agentId = constantsAgentId || manifestAgentId;
   
   // Ensure it's a valid string, not an object or empty
   const isValid = typeof agentId === 'string' && agentId.trim() !== '' && agentId !== '{}';
   
   console.log('🔍 isSingleAgentMode check:', {
-    envAgentId,
     constantsAgentId,
     manifestAgentId,
     finalAgentId: agentId,
@@ -24,16 +23,15 @@ export const isSingleAgentMode = (): boolean => {
 };
 
 export const getSingleAgentConfig = () => {
-  const envAgentId = process.env.EXPO_PUBLIC_AGENT_ID;
+  // 🔥 SAFE: Use Constants instead of process.env in components
   const constantsAgentId = Constants.expoConfig?.extra?.agentId;
   const manifestAgentId = Constants.manifest?.extra?.agentId;
   
-  const envAgentName = process.env.EXPO_PUBLIC_AGENT_NAME;
   const constantsAgentName = Constants.expoConfig?.extra?.agentName;
   const manifestAgentName = Constants.manifest?.extra?.agentName;
   
-  const agentId = envAgentId || constantsAgentId || manifestAgentId;
-  const agentName = envAgentName || constantsAgentName || manifestAgentName;
+  const agentId = constantsAgentId || manifestAgentId;
+  const agentName = constantsAgentName || manifestAgentName;
   
   return {
     agentId: typeof agentId === 'string' && agentId.trim() !== '' && agentId !== '{}' ? agentId : '',

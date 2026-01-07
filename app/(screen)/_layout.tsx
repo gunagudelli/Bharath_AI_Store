@@ -8,18 +8,16 @@ import SingleAgentTemplate from '../../templates/SingleAgentTemplate';
 
 // 🔥 Reliable single-agent detection
 const getSingleAgentConfig = () => {
-  // Try multiple sources for agent config
-  const envAgentId = process.env.EXPO_PUBLIC_AGENT_ID;
+  // 🔥 SAFE: Use Constants instead of process.env in components
   const constantsAgentId = Constants.expoConfig?.extra?.agentId;
   const manifestAgentId = Constants.manifest?.extra?.agentId;
   
-  const agentId = envAgentId || constantsAgentId || manifestAgentId;
+  const agentId = constantsAgentId || manifestAgentId;
   
   // Ensure it's a valid string, not an object
   const validAgentId = typeof agentId === 'string' && agentId.trim() !== '' && agentId !== '{}' ? agentId : null;
   
   console.log('🔍 Single Agent Detection:', {
-    envAgentId,
     constantsAgentId,
     manifestAgentId,
     finalAgentId: validAgentId,

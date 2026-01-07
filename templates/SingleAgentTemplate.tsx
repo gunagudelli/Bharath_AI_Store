@@ -40,13 +40,11 @@ const SingleAgentTemplate: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // 🔥 Get target agent ID from build-time environment
-      const targetAgentId = process.env.EXPO_PUBLIC_AGENT_ID || 
-                           Constants.expoConfig?.extra?.agentId || 
+      // 🔥 SAFE: Use Constants instead of process.env in components
+      const targetAgentId = Constants.expoConfig?.extra?.agentId || 
                            Constants.manifest?.extra?.agentId;
       
-      const targetAgentName = process.env.EXPO_PUBLIC_AGENT_NAME || 
-                             Constants.expoConfig?.extra?.agentName || 
+      const targetAgentName = Constants.expoConfig?.extra?.agentName || 
                              Constants.manifest?.extra?.agentName;
       
       console.log('🎯 Target agent config:', {
@@ -111,8 +109,8 @@ const SingleAgentTemplate: React.FC = () => {
       console.error('❌ Error fetching agent:', error?.message);
       
       // Fallback to environment variables
-      const fallbackId = process.env.EXPO_PUBLIC_AGENT_ID || Constants.expoConfig?.extra?.agentId;
-      const fallbackName = process.env.EXPO_PUBLIC_AGENT_NAME || Constants.expoConfig?.extra?.agentName;
+      const fallbackId = Constants.expoConfig?.extra?.agentId || Constants.manifest?.extra?.agentId;
+      const fallbackName = Constants.expoConfig?.extra?.agentName || Constants.manifest?.extra?.agentName;
       
       if (fallbackId && fallbackName) {
         console.log('🔄 Using environment fallback');
