@@ -40,7 +40,6 @@ const SingleAgentTemplate: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // 🔥 SAFE: Use Constants instead of process.env in components
       const targetAgentId = Constants.expoConfig?.extra?.agentId || 
                            Constants.manifest?.extra?.agentId;
       
@@ -57,7 +56,7 @@ const SingleAgentTemplate: React.FC = () => {
         throw new Error('Agent ID not found in APK configuration');
       }
 
-      // 🔥 CRITICAL FIX: Skip API if we have both ID and name (APK best practice)
+      // Skip API if we have both ID and name (APK best practice)
       if (targetAgentId && targetAgentName) {
         console.log('✅ Using environment config directly (no API dependency)');
         setAgent({
@@ -65,22 +64,19 @@ const SingleAgentTemplate: React.FC = () => {
           name: targetAgentName,
           description: 'Your AI assistant',
         });
-        return; // ⛔ Skip API completely
+        return;
       }
 
-      // 🔥 CRITICAL FIX: Proper Bearer token authorization
+      // Fetch from API if needed
       const response = await axios.get(`${BASE_URL}ai-service/agent/getAllAssistants?limit=100`, {
         headers: {
           Accept: "*/*",
-          Authorization: `Bearer ${userData.accessToken}`, // 🔥 FIXED: Added Bearer prefix
+          Authorization: `Bearer ${userData.accessToken}`,
         },
         timeout: 10000,
       });
 
       const agents = response.data?.data || [];
-      console.log('📊 Total agents fetched:', agents.length);
-      
-      // 🔥 CRITICAL FIX: Safe string comparison for ID matching
       const foundAgent = agents.find((a: any) => 
         String(a.id) === String(targetAgentId) ||
         String(a.assistantId) === String(targetAgentId) ||
@@ -88,7 +84,6 @@ const SingleAgentTemplate: React.FC = () => {
       );
 
       if (foundAgent) {
-        console.log('✅ Target agent found:', foundAgent.name);
         setAgent({
           id: foundAgent.id,
           assistantId: foundAgent.assistantId,
@@ -97,8 +92,6 @@ const SingleAgentTemplate: React.FC = () => {
           description: foundAgent.description || foundAgent.instructions,
         });
       } else {
-        // Fallback to environment variable name
-        console.log('⚠️ Agent not found in API, using fallback');
         setAgent({
           assistantId: targetAgentId,
           name: targetAgentName || 'AI Assistant',
@@ -108,12 +101,10 @@ const SingleAgentTemplate: React.FC = () => {
     } catch (error: any) {
       console.error('❌ Error fetching agent:', error?.message);
       
-      // Fallback to environment variables
       const fallbackId = Constants.expoConfig?.extra?.agentId || Constants.manifest?.extra?.agentId;
       const fallbackName = Constants.expoConfig?.extra?.agentName || Constants.manifest?.extra?.agentName;
       
       if (fallbackId && fallbackName) {
-        console.log('🔄 Using environment fallback');
         setAgent({
           assistantId: fallbackId,
           name: fallbackName,
@@ -138,32 +129,33 @@ const SingleAgentTemplate: React.FC = () => {
       return;
     }
     
-    const agentId = agent.assistantId || agent.id || agent.agentId;
+    const assistantId = agent.assistantId || agent.id || agent.agentId;
     
-    console.log('💬 Opening chat with explicit params:', {
-      assistantId: agentId,
-      agentName: agent.name,
-      agentId: agentId,
-      userId: userData.userId
-    });
-    
-    try {
+    if (agent.name === "THE FAN OF OG") {
+      router.push({
+        pathname: '/(auth)/otp',
+        params: {
+          assistantId: assistantId,
+          query: "",
+          category: "Fan of OG",
+          agentName: "Fan of OG",
+          fd: null,
+          agentId: assistantId
+        }
+      });
+    } else {
       router.push({
         pathname: '/(screen)/userflow/GenOxyChatScreen',
         params: {
-          assistantId: agentId,
+          assistantId: assistantId,
           query: "",
           category: "Assistant",
-          agentName: agent.name,
-          agentId: agentId,
-          title: agent.name,
-          isSingleAgent: 'true',
-          userId: userData.userId
+          agentName: agent.name || "Assistant",
+          fd: null,
+          agentId: assistantId,
+          title: agent.name || "Chat with Agent",
         }
       });
-    } catch (error) {
-      console.error('Navigation error:', error);
-      Alert.alert('Navigation Error', 'Could not open chat. Please try again.');
     }
   };
 

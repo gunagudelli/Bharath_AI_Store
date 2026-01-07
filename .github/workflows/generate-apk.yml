@@ -46,18 +46,18 @@ jobs:
           EXPO_PUBLIC_AGENT_NAME: ${{ github.event.client_payload.agentName }}
           EXPO_PUBLIC_BUILD_ID: ${{ github.event.client_payload.buildId }}
         run: |
-          echo "🔥 Building with environment variables:"
+          echo "🔥 Forwarding env vars to EAS cloud"
           echo "EXPO_PUBLIC_AGENT_ID: $EXPO_PUBLIC_AGENT_ID"
           echo "EXPO_PUBLIC_AGENT_NAME: $EXPO_PUBLIC_AGENT_NAME"
           echo "EXPO_PUBLIC_BUILD_ID: $EXPO_PUBLIC_BUILD_ID"
-          EXPO_PUBLIC_AGENT_ID="$EXPO_PUBLIC_AGENT_ID" \
-          EXPO_PUBLIC_AGENT_NAME="$EXPO_PUBLIC_AGENT_NAME" \
-          EXPO_PUBLIC_BUILD_ID="$EXPO_PUBLIC_BUILD_ID" \
           npx eas build \
             --platform android \
             --profile agent-apk \
             --non-interactive \
-            --wait
+            --wait \
+            --env EXPO_PUBLIC_AGENT_ID=$EXPO_PUBLIC_AGENT_ID \
+            --env EXPO_PUBLIC_AGENT_NAME=$EXPO_PUBLIC_AGENT_NAME \
+            --env EXPO_PUBLIC_BUILD_ID=$EXPO_PUBLIC_BUILD_ID
 
       # 7️⃣ Get APK download URL
       - name: Get APK Download URL
