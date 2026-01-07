@@ -54,10 +54,7 @@ jobs:
             --platform android \
             --profile agent-apk \
             --non-interactive \
-            --wait \
-            --env EXPO_PUBLIC_AGENT_ID=$EXPO_PUBLIC_AGENT_ID \
-            --env EXPO_PUBLIC_AGENT_NAME=$EXPO_PUBLIC_AGENT_NAME \
-            --env EXPO_PUBLIC_BUILD_ID=$EXPO_PUBLIC_BUILD_ID
+            --wait
 
       # 7️⃣ Get APK download URL
       - name: Get APK Download URL
