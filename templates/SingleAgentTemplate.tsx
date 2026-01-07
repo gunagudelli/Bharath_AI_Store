@@ -1,3 +1,4 @@
+// Single Agent Template - Clean UI for APK builds
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Constants from 'expo-constants';
 import axios from 'axios';
 import BASE_URL from '../config';
-import DebugInfo from './DebugInfo';
+import DebugInfo from '../components/DebugInfo';
 
 interface Agent {
   id?: string;
@@ -18,7 +19,7 @@ interface Agent {
   instructions?: string;
 }
 
-const SingleAgentMode: React.FC = () => {
+const SingleAgentTemplate: React.FC = () => {
   const [agent, setAgent] = useState<Agent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,64 +28,69 @@ const SingleAgentMode: React.FC = () => {
   
   useEffect(() => {
     if (userData?.accessToken) {
-      fetchAgent();
+      fetchTargetAgent();
     } else {
       setError('Authentication required');
       setLoading(false);
     }
   }, [userData]);
 
-  const fetchAgent = async () => {
+  const fetchTargetAgent = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // 🔥 ROBUST agent ID detection
-      const envAgentId = process.env.EXPO_PUBLIC_AGENT_ID;
-      const constantsAgentId = Constants.expoConfig?.extra?.agentId;
-      const manifestAgentId = Constants.manifest?.extra?.agentId;
+      // 🔥 Get target agent ID from build-time environment
+      const targetAgentId = process.env.EXPO_PUBLIC_AGENT_ID || 
+                           Constants.expoConfig?.extra?.agentId || 
+                           Constants.manifest?.extra?.agentId;
       
-      // Try all sources and ensure it's a valid string
-      let targetAgentId = envAgentId || constantsAgentId || manifestAgentId;
+      const targetAgentName = process.env.EXPO_PUBLIC_AGENT_NAME || 
+                             Constants.expoConfig?.extra?.agentName || 
+                             Constants.manifest?.extra?.agentName;
       
-      // Handle object/invalid cases
-      if (typeof targetAgentId !== 'string' || targetAgentId.trim() === '' || targetAgentId === '{}') {
-        targetAgentId = null;
-      }
-      
-      console.log('🔍 Agent ID Detection:', {
-        envAgentId,
-        constantsAgentId,
-        manifestAgentId,
-        finalTargetId: targetAgentId,
+      console.log('🎯 Target agent config:', {
+        targetAgentId,
+        targetAgentName,
         hasToken: !!userData?.accessToken
       });
 
-      if (!targetAgentId) {
-        throw new Error('Valid agent ID not found in configuration');
+      if (!targetAgentId || targetAgentId === '{}') {
+        throw new Error('Agent ID not found in APK configuration');
       }
 
-      // Fetch all agents from API
+      // 🔥 CRITICAL FIX: Skip API if we have both ID and name (APK best practice)
+      if (targetAgentId && targetAgentName) {
+        console.log('✅ Using environment config directly (no API dependency)');
+        setAgent({
+          assistantId: targetAgentId,
+          name: targetAgentName,
+          description: 'Your AI assistant',
+        });
+        return; // ⛔ Skip API completely
+      }
+
+      // 🔥 CRITICAL FIX: Proper Bearer token authorization
       const response = await axios.get(`${BASE_URL}ai-service/agent/getAllAssistants?limit=100`, {
         headers: {
           Accept: "*/*",
-          Authorization: userData.accessToken,
+          Authorization: `Bearer ${userData.accessToken}`, // 🔥 FIXED: Added Bearer prefix
         },
         timeout: 10000,
       });
 
       const agents = response.data?.data || [];
-      console.log('📊 Available agents:', agents.length);
+      console.log('📊 Total agents fetched:', agents.length);
       
-      // Find the target agent
+      // 🔥 CRITICAL FIX: Safe string comparison for ID matching
       const foundAgent = agents.find((a: any) => 
-        a.id === targetAgentId || 
-        a.assistantId === targetAgentId || 
-        a.agentId === targetAgentId
+        String(a.id) === String(targetAgentId) ||
+        String(a.assistantId) === String(targetAgentId) ||
+        String(a.agentId) === String(targetAgentId)
       );
 
       if (foundAgent) {
-        console.log('✅ Found agent:', foundAgent.name);
+        console.log('✅ Target agent found:', foundAgent.name);
         setAgent({
           id: foundAgent.id,
           assistantId: foundAgent.assistantId,
@@ -93,29 +99,23 @@ const SingleAgentMode: React.FC = () => {
           description: foundAgent.description || foundAgent.instructions,
         });
       } else {
-        // Fallback to environment variable name if agent not found
-        const envAgentName = process.env.EXPO_PUBLIC_AGENT_NAME || Constants.expoConfig?.extra?.agentName;
-        const fallbackName = (typeof envAgentName === 'string' ? envAgentName : null) || 'AI Assistant';
-        
-        console.log('⚠️ Agent not found in API, using fallback:', fallbackName);
+        // Fallback to environment variable name
+        console.log('⚠️ Agent not found in API, using fallback');
         setAgent({
           assistantId: targetAgentId,
-          name: fallbackName,
+          name: targetAgentName || 'AI Assistant',
           description: 'Your AI assistant',
         });
       }
     } catch (error: any) {
-      console.error('❌ Error fetching agent:', error);
+      console.error('❌ Error fetching agent:', error?.message);
       
       // Fallback to environment variables
-      const envAgentId = process.env.EXPO_PUBLIC_AGENT_ID || Constants.expoConfig?.extra?.agentId;
-      const envAgentName = process.env.EXPO_PUBLIC_AGENT_NAME || Constants.expoConfig?.extra?.agentName;
-      
-      const fallbackId = typeof envAgentId === 'string' ? envAgentId : null;
-      const fallbackName = typeof envAgentName === 'string' ? envAgentName : null;
+      const fallbackId = process.env.EXPO_PUBLIC_AGENT_ID || Constants.expoConfig?.extra?.agentId;
+      const fallbackName = process.env.EXPO_PUBLIC_AGENT_NAME || Constants.expoConfig?.extra?.agentName;
       
       if (fallbackId && fallbackName) {
-        console.log('🔄 Using environment fallback:', { fallbackId, fallbackName });
+        console.log('🔄 Using environment fallback');
         setAgent({
           assistantId: fallbackId,
           name: fallbackName,
@@ -129,7 +129,7 @@ const SingleAgentMode: React.FC = () => {
     }
   };
 
-  const openAgentChat = () => {
+  const openChat = () => {
     if (!agent) {
       Alert.alert('Error', 'Agent not loaded');
       return;
@@ -140,15 +140,13 @@ const SingleAgentMode: React.FC = () => {
       return;
     }
     
-    // 🔥 EXPLICIT agent ID passing - critical for APK chat functionality
     const agentId = agent.assistantId || agent.id || agent.agentId;
     
-    console.log('💬 Opening chat with EXPLICIT params:', {
+    console.log('💬 Opening chat with explicit params:', {
       assistantId: agentId,
       agentName: agent.name,
       agentId: agentId,
-      userId: userData.userId,
-      hasToken: !!userData.accessToken
+      userId: userData.userId
     });
     
     try {
@@ -159,9 +157,8 @@ const SingleAgentMode: React.FC = () => {
           query: "",
           category: "Assistant",
           agentName: agent.name,
-          agentId: agentId, // 🔥 EXPLICIT - ensure this is passed
+          agentId: agentId,
           title: agent.name,
-          // 🔥 Additional context for APK
           isSingleAgent: 'true',
           userId: userData.userId
         }
@@ -172,17 +169,13 @@ const SingleAgentMode: React.FC = () => {
     }
   };
 
-  const handleRetry = () => {
-    fetchAgent();
-  };
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <LinearGradient colors={['#E3F2FD', '#BBDEFB']} style={styles.gradient}>
           <View style={styles.centerContent}>
             <ActivityIndicator size="large" color="#3d2a71" />
-            <Text style={styles.loadingText}>Loading agent...</Text>
+            <Text style={styles.loadingText}>Loading your AI assistant...</Text>
           </View>
         </LinearGradient>
       </SafeAreaView>
@@ -195,7 +188,7 @@ const SingleAgentMode: React.FC = () => {
         <LinearGradient colors={['#E3F2FD', '#BBDEFB']} style={styles.gradient}>
           <View style={styles.centerContent}>
             <Text style={styles.errorText}>⚠️ {error || 'Agent not found'}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchTargetAgent}>
               <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
           </View>
@@ -224,7 +217,7 @@ const SingleAgentMode: React.FC = () => {
               {agent.description || 'Your AI assistant'}
             </Text>
             
-            <TouchableOpacity style={styles.chatButton} onPress={openAgentChat}>
+            <TouchableOpacity style={styles.chatButton} onPress={openChat}>
               <Text style={styles.chatButtonText}>Start Conversation</Text>
             </TouchableOpacity>
           </View>
@@ -352,4 +345,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SingleAgentMode;
+export default SingleAgentTemplate;

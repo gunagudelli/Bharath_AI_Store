@@ -112,7 +112,7 @@ const BharathAgentstore: React.FC = () => {
       const response = await axios.get(url, {
         headers: {
           Accept: "*/*",
-          Authorization: userData?.accessToken || "",
+          Authorization: `Bearer ${userData?.accessToken || ""}`,
         },
       });
       console.log("Fetch agents response:", response.data);
@@ -151,9 +151,9 @@ const BharathAgentstore: React.FC = () => {
         console.log("No data received or invalid format. Response:", result);
         if (!append) setAgents([]);
       }
-    } catch (error) {
-      console.error("Fetch agents error:", error);
-      console.error("Error details:", error.response?.data);
+    } catch (error: any) {
+      console.error("Fetch agents error:", error?.message || 'Unknown error');
+      console.error("Error details:", error?.response?.data || 'No additional details');
       Alert.alert("Error", "Failed to load assistants.");
       if (!afterId) setAgents([]);
     } finally {
@@ -171,7 +171,7 @@ const BharathAgentstore: React.FC = () => {
       const response = await axios.get(url, {
         headers: {
           Accept: "*/*",
-          Authorization: userData?.accessToken || "",
+          Authorization: `Bearer ${userData?.accessToken || ""}`,
         },
       });
       const result = response.data;
@@ -192,8 +192,8 @@ const BharathAgentstore: React.FC = () => {
       }));
       console.log("Web search result:", webAgents[0]);
       setSearchResults(webAgents);
-    } catch (error) {
-      console.error("Web search error:", error);
+    } catch (error: any) {
+      console.error("Web search error:", error?.message || 'Unknown error');
       Alert.alert("Search Error", "Failed to fetch web results. Showing local results.");
       setSearchResults([]);
     } finally {
@@ -293,8 +293,8 @@ const BharathAgentstore: React.FC = () => {
         });
       }
       
-    } catch (error) {
-      console.error('Error checking ongoing builds:', error);
+    } catch (error: any) {
+      console.error('Error checking ongoing builds:', error?.message || 'Unknown error');
     }
   };
 
@@ -323,8 +323,29 @@ const BharathAgentstore: React.FC = () => {
       return searchableText.includes(searchTerm);
     });
     
+    console.log('🔍 Before single-agent filtering:', {
+      totalAgents: filtered.length,
+      isSingleMode: isSingleAgentMode(),
+      sampleAgent: filtered[0] ? {
+        name: filtered[0].name,
+        id: filtered[0].id,
+        assistantId: filtered[0].assistantId,
+        agentId: filtered[0].agentId
+      } : null
+    });
+    
     // 🔥 CRITICAL: Filter for single-agent mode in production APKs
     filtered = filterAgentsForMode(filtered);
+    
+    console.log('🔍 After single-agent filtering:', {
+      finalCount: filtered.length,
+      agents: filtered.map(a => ({
+        name: a.name,
+        id: a.id,
+        assistantId: a.assistantId,
+        agentId: a.agentId
+      }))
+    });
     
     setLocalAgents(filtered);
     console.log("Local filtered agents:", filtered.length);
@@ -379,11 +400,11 @@ const BharathAgentstore: React.FC = () => {
       const response = await axios.post(`${APK_BASE_URL}generate-apk`, {
         agentId: agentId,
         agentName: agent.name,
-        userId: userData?.userId || "anonymous" // Use actual user ID from Redux
+        userId: userData?.userId || "anonymous"
       }, {
         headers: {
           Accept: "*/*",
-          Authorization: userData?.accessToken || "" // Use actual token from Redux
+          Authorization: `Bearer ${userData?.accessToken || ""}`
         }
       });
       
@@ -450,18 +471,18 @@ const BharathAgentstore: React.FC = () => {
         );
         
         // 🔥 Poll for build status
-        pollBuildStatus(buildId, agentId, agent.name);
+        pollBuildStatus(buildId, agentId, agent.name || 'Unknown Agent');
         
       } else {
         throw new Error(response.data.error || 'APK generation failed');
       }
       
     } catch (error: any) {
-      console.error('❌ APK Generation Error:', error);
+      console.error('❌ APK Generation Error:', error?.message || 'Unknown error');
       
       Alert.alert(
         '❌ APK Generation Failed',
-        `😔 Could not create APK for ${agent.name}\n\n🔍 Error: ${error.message}\n\n🔄 Please try again or contact support.`,
+        `😔 Could not create APK for ${agent.name || 'Unknown Agent'}\n\n🔍 Error: ${error?.message || 'Unknown error'}\n\n🔄 Please try again or contact support.`,
         [
           { text: 'Retry', onPress: () => generateAPK(agent) },
           { text: 'Cancel', style: 'cancel' }
@@ -579,8 +600,8 @@ const BharathAgentstore: React.FC = () => {
           setTimeout(poll, 15000);
         }
         
-      } catch (error) {
-        console.error('Polling error:', error.message);
+      } catch (error: any) {
+        console.error('Polling error:', error?.message || 'Unknown error');
         pollCount++;
         setTimeout(poll, 20000); // Longer delay on error
       }
@@ -594,8 +615,8 @@ const BharathAgentstore: React.FC = () => {
   const goToChat = (agent: AgentItem): void => {
     if (agent.isWeb && agent.url) {
       // Open web result in browser
-      Linking.openURL(agent.url).catch((err) => {
-        console.error("Failed to open URL:", err);
+      Linking.openURL(agent.url).catch((err: any) => {
+        console.error("Failed to open URL:", err?.message || 'Unknown error');
         Alert.alert("Error", "Could not open link.");
       });
       return;

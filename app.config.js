@@ -1,14 +1,19 @@
 // app.config.js - Dynamic configuration for agent-specific APKs
 export default ({ config }) => {
-  const isSingleAgent =
-    !!process.env.EXPO_PUBLIC_AGENT_ID &&
-    !!process.env.EXPO_PUBLIC_AGENT_NAME;
+  const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
+  const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
+  
+  const isSingleAgent = !!(agentId && agentName && agentId !== '{}' && agentName !== '{}');
+  
+  console.log('🔧 App Config:', {
+    agentId,
+    agentName,
+    isSingleAgent
+  });
 
   return {
     ...config,
-    name: isSingleAgent
-      ? process.env.EXPO_PUBLIC_AGENT_NAME
-      : "Bharath AI Store",
+    name: isSingleAgent ? agentName : "Bharath AI Store",
     slug: "bharath-ai-automation",
     owner: "guna123",
     version: "1.0.0",
@@ -61,8 +66,9 @@ export default ({ config }) => {
     },
     extra: {
       singleAgent: isSingleAgent,
-      agentId: process.env.EXPO_PUBLIC_AGENT_ID || null,
-      agentName: process.env.EXPO_PUBLIC_AGENT_NAME || null,
+      isSingleAgent: isSingleAgent,
+      agentId: agentId || null,
+      agentName: agentName || null,
       buildId: process.env.EXPO_PUBLIC_BUILD_ID || null,
       router: {
         origin: false

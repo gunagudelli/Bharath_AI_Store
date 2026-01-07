@@ -4,7 +4,30 @@ import { Stack, Redirect, useLocalSearchParams } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/types'; // Adjust path to types
 import Constants from 'expo-constants';
-import SingleAgentMode from '../../components/SingleAgentMode';
+import SingleAgentTemplate from '../../templates/SingleAgentTemplate';
+
+// 🔥 Reliable single-agent detection
+const getSingleAgentConfig = () => {
+  // Try multiple sources for agent config
+  const envAgentId = process.env.EXPO_PUBLIC_AGENT_ID;
+  const constantsAgentId = Constants.expoConfig?.extra?.agentId;
+  const manifestAgentId = Constants.manifest?.extra?.agentId;
+  
+  const agentId = envAgentId || constantsAgentId || manifestAgentId;
+  
+  // Ensure it's a valid string, not an object
+  const validAgentId = typeof agentId === 'string' && agentId.trim() !== '' && agentId !== '{}' ? agentId : null;
+  
+  console.log('🔍 Single Agent Detection:', {
+    envAgentId,
+    constantsAgentId,
+    manifestAgentId,
+    finalAgentId: validAgentId,
+    isSingleAgent: !!validAgentId
+  });
+  
+  return validAgentId;
+};
 
 export default function ScreenLayout() {
   const userData = useSelector((state: RootState) => state.userData);
@@ -12,17 +35,30 @@ export default function ScreenLayout() {
   const { title } = useLocalSearchParams();
 
   // 🔥 Check if this is a single-agent APK
-  const isSingleAgent = Constants.expoConfig?.extra?.isSingleAgent;
+  const singleAgentId = getSingleAgentConfig();
+  const isSingleAgent = !!singleAgentId;
+  
+  console.log('🎯 Layout Decision:', {
+    isAuthenticated,
+    isSingleAgent,
+    singleAgentId,
+    willShowSingleAgent: isAuthenticated && isSingleAgent
+  });
   
   if (!isAuthenticated) {
-    console.log('Unauthorized: Redirecting to welcome');
+    console.log('❌ Unauthorized: Redirecting to welcome');
     return <Redirect href="/(auth)/welcome" />;
   }
 
-  // If single-agent mode, show only that agent
+  // 🔥 CRITICAL: If single-agent mode, show ONLY that agent (no tabs, no multi-agent UI)
   if (isSingleAgent) {
-    return <SingleAgentMode />;
+    console.log('🎯 Single Agent Mode Activated for:', singleAgentId);
+    console.log('🚫 Bypassing tabs/multi-agent layout');
+    console.log('✅ Rendering SingleAgentTemplate component only');
+    return <SingleAgentTemplate />;
   }
+  
+  console.log('🔄 Multi-agent mode - showing tabs layout');
 
   return (
     <Stack
