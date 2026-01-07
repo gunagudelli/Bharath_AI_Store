@@ -2,7 +2,6 @@
   "expo": {
     "name": "Bharath AI Automation",
     "slug": "bharath-ai-automation",
-    "owner": "guna123",
     "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/bharat-Eicon.png",
@@ -31,7 +30,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "a4ad1ced-4882-4621-98b0-f94ba8039da3"
+        "projectId": "14004560-1bb5-4a05-ac04-1ab1c0c47473"
       }
     }
   }

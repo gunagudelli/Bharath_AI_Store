@@ -15,7 +15,6 @@ export default ({ config }) => {
     ...config,
     name: isSingleAgent ? agentName : "Bharath AI Store",
     slug: "bharath-ai-automation",
-    owner: "guna123",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -74,7 +73,7 @@ export default ({ config }) => {
         origin: false
       },
       eas: {
-        projectId: "a4ad1ced-4882-4621-98b0-f94ba8039da3"
+        projectId: "14004560-1bb5-4a05-ac04-1ab1c0c47473"
       }
     }
   };
