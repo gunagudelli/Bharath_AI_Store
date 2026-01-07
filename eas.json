@@ -13,11 +13,6 @@
       "extends": "production",
       "android": {
         "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_AGENT_ID": "$EXPO_PUBLIC_AGENT_ID",
-        "EXPO_PUBLIC_AGENT_NAME": "$EXPO_PUBLIC_AGENT_NAME",
-        "EXPO_PUBLIC_BUILD_ID": "$EXPO_PUBLIC_BUILD_ID"
       }
     }
   },
