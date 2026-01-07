@@ -2,12 +2,23 @@
 export default ({ config }) => {
   const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
   const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
+  const buildId = process.env.EXPO_PUBLIC_BUILD_ID;
   
   const isSingleAgent = !!(agentId && agentName && agentId !== '{}' && agentName !== '{}');
   
-  console.log('🔧 App Config:', {
+  // 🔥 CRITICAL DEBUG: Log all environment variables
+  console.log('🔍 Environment Variables Debug:', {
+    EXPO_PUBLIC_AGENT_ID: process.env.EXPO_PUBLIC_AGENT_ID,
+    EXPO_PUBLIC_AGENT_NAME: process.env.EXPO_PUBLIC_AGENT_NAME,
+    EXPO_PUBLIC_BUILD_ID: process.env.EXPO_PUBLIC_BUILD_ID,
+    NODE_ENV: process.env.NODE_ENV,
+    EAS_BUILD: process.env.EAS_BUILD
+  });
+  
+  console.log('🔧 App Config Result:', {
     agentId,
     agentName,
+    buildId,
     isSingleAgent
   });
 

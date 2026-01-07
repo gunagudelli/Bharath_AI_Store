@@ -50,6 +50,9 @@ jobs:
           echo "EXPO_PUBLIC_AGENT_ID: $EXPO_PUBLIC_AGENT_ID"
           echo "EXPO_PUBLIC_AGENT_NAME: $EXPO_PUBLIC_AGENT_NAME"
           echo "EXPO_PUBLIC_BUILD_ID: $EXPO_PUBLIC_BUILD_ID"
+          EXPO_PUBLIC_AGENT_ID="$EXPO_PUBLIC_AGENT_ID" \
+          EXPO_PUBLIC_AGENT_NAME="$EXPO_PUBLIC_AGENT_NAME" \
+          EXPO_PUBLIC_BUILD_ID="$EXPO_PUBLIC_BUILD_ID" \
           npx eas build \
             --platform android \
             --profile agent-apk \
