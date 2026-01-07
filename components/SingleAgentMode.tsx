@@ -38,10 +38,13 @@ const SingleAgentMode: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Get agent ID from environment variables
+      // Get agent ID from environment variables (ensure string conversion)
       const envAgentId = process.env.EXPO_PUBLIC_AGENT_ID;
       const constantsAgentId = Constants.expoConfig?.extra?.agentId;
-      const targetAgentId = envAgentId || constantsAgentId;
+      
+      // Convert to string and filter out empty objects/values
+      const targetAgentId = envAgentId || 
+        (constantsAgentId && typeof constantsAgentId === 'string' ? constantsAgentId : null);
       
       console.log('🔍 Fetching agent:', {
         envAgentId,
@@ -50,8 +53,8 @@ const SingleAgentMode: React.FC = () => {
         hasToken: !!userData?.accessToken
       });
 
-      if (!targetAgentId) {
-        throw new Error('Agent ID not found in configuration');
+      if (!targetAgentId || targetAgentId === '{}') {
+        throw new Error('Valid agent ID not found in configuration');
       }
 
       // Fetch all agents from API
@@ -85,10 +88,12 @@ const SingleAgentMode: React.FC = () => {
       } else {
         // Fallback to environment variable name if agent not found
         const envAgentName = process.env.EXPO_PUBLIC_AGENT_NAME || Constants.expoConfig?.extra?.agentName;
-        console.log('⚠️ Agent not found in API, using fallback');
+        const fallbackName = (typeof envAgentName === 'string' ? envAgentName : null) || 'AI Assistant';
+        
+        console.log('⚠️ Agent not found in API, using fallback:', fallbackName);
         setAgent({
           assistantId: targetAgentId,
-          name: envAgentName || 'AI Assistant',
+          name: fallbackName,
           description: 'Your AI assistant',
         });
       }
@@ -99,11 +104,14 @@ const SingleAgentMode: React.FC = () => {
       const envAgentId = process.env.EXPO_PUBLIC_AGENT_ID || Constants.expoConfig?.extra?.agentId;
       const envAgentName = process.env.EXPO_PUBLIC_AGENT_NAME || Constants.expoConfig?.extra?.agentName;
       
-      if (envAgentId && envAgentName) {
-        console.log('🔄 Using environment fallback');
+      const fallbackId = typeof envAgentId === 'string' ? envAgentId : null;
+      const fallbackName = typeof envAgentName === 'string' ? envAgentName : null;
+      
+      if (fallbackId && fallbackName) {
+        console.log('🔄 Using environment fallback:', { fallbackId, fallbackName });
         setAgent({
-          assistantId: envAgentId,
-          name: envAgentName,
+          assistantId: fallbackId,
+          name: fallbackName,
           description: 'Your AI assistant',
         });
       } else {
