@@ -1,10 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import BharathAgentstore from '../(toptabs)';
 import RadhaAILab from '../(toptabs)/RadhaAILab';
+import { router } from 'expo-router';
 
 export default function TabsIndex() {
   const [activeTab, setActiveTab] = useState('store');
+
+  // 🔥 CHECK FOR SINGLE-AGENT MODE AT RUNTIME
+  useEffect(() => {
+    const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
+    const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
+    
+    console.log('🔍 Single-Agent Check:', { agentId, agentName });
+    
+    // If single-agent mode, redirect directly to chat
+    if (agentId && agentName && agentId !== '{}') {
+      console.log('✅ Single-Agent Mode Detected - Redirecting to chat');
+      
+      router.replace({
+        pathname: '/(screen)/userflow/GenOxyChatScreen',
+        params: {
+          assistantId: agentId,
+          agentId: agentId,
+          agentName: agentName,
+          query: '',
+          category: 'Assistant',
+          title: agentName,
+        }
+      });
+    }
+  }, []);
 
   return (
     <View style={styles.container}>

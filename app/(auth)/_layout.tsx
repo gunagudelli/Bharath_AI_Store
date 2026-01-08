@@ -11,19 +11,19 @@ export default function AuthLayout() {
   const isAuthenticated = !!userData?.accessToken;
   const isOnboardingCompleted = onboardingState?.isCompleted;
   
-  // Check for single-agent mode (APK automation)
-  const envAgentId = process.env.EXPO_PUBLIC_AGENT_ID;
-  const constantsAgentId = Constants.expoConfig?.extra?.agentId;
+  // 🔥 Check for single-agent mode at RUNTIME
+  const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
+  const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
+  const isSingleAgent = !!(agentId && agentName && agentId !== '{}');
   
-  // Ensure we get a valid string, not an object
-  const agentId = envAgentId || 
-    (constantsAgentId && typeof constantsAgentId === 'string' ? constantsAgentId : null);
+  console.log('🔍 Auth Layout - Single Agent Check:', { agentId, agentName, isSingleAgent, isAuthenticated });
   
   if (isAuthenticated) {
-    // DISABLED: Always go to multi-agent store, ignore single-agent mode
-    // if (agentId) {
-    //   return <SingleAgentTemplate />;
-    // }
+    // ✅ ENABLED: Single-agent mode redirects directly to chat
+    if (isSingleAgent) {
+      console.log('✅ Single-Agent Mode - Using SingleAgentTemplate');
+      return <SingleAgentTemplate />;
+    }
     return <Redirect href="/(screen)/(tabs)" />;
   }
 
