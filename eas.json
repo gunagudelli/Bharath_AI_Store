@@ -14,7 +14,7 @@
       "extends": "production",
       "android": {
         "buildType": "apk",
-        "credentialsSource": "local"
+        "credentialsSource": "remote"
       }
     }
   },
