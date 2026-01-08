@@ -7,23 +7,13 @@ import Constants from 'expo-constants';
 import SingleAgentTemplate from '../../templates/SingleAgentTemplate';
 import { enforceNavigationRestrictions } from '../../utils/singleAgentMode';
 
-// 🔥 Reliable single-agent detection
 const getSingleAgentConfig = () => {
-  // 🔥 SAFE: Use Constants instead of process.env in components
   const constantsAgentId = Constants.expoConfig?.extra?.agentId;
   const manifestAgentId = Constants.manifest?.extra?.agentId;
   
   const agentId = constantsAgentId || manifestAgentId;
   
-  // Ensure it's a valid string, not an object
   const validAgentId = typeof agentId === 'string' && agentId.trim() !== '' && agentId !== '{}' ? agentId : null;
-  
-  console.log('🔍 Single Agent Detection:', {
-    constantsAgentId,
-    manifestAgentId,
-    finalAgentId: validAgentId,
-    isSingleAgent: !!validAgentId
-  });
   
   return validAgentId;
 };
@@ -33,36 +23,20 @@ export default function ScreenLayout() {
   const isAuthenticated = !!userData?.accessToken;
   const { title } = useLocalSearchParams();
 
-  // 🔥 Check if this is a single-agent APK
   const singleAgentId = getSingleAgentConfig();
   const isSingleAgent = !!singleAgentId;
   
-  // 🔒 ENFORCE: Activate navigation restrictions for single-agent mode
   useEffect(() => {
     if (isSingleAgent) {
       enforceNavigationRestrictions();
     }
   }, [isSingleAgent]);
   
-  console.log('🎯 Layout Decision:', {
-    isAuthenticated,
-    isSingleAgent,
-    singleAgentId,
-    willShowSingleAgent: isAuthenticated && isSingleAgent
-  });
-  
   if (!isAuthenticated) {
-    console.log('❌ Unauthorized: Redirecting to welcome');
     return <Redirect href="/(auth)/welcome" />;
   }
 
-  // 🔥 CRITICAL: If single-agent mode, show ONLY that agent (no tabs, no multi-agent UI)
   if (isSingleAgent) {
-    console.log('🎯 Single Agent Mode Activated for:', singleAgentId);
-    console.log('🚫 Bypassing tabs/multi-agent layout');
-    console.log('✅ Rendering SingleAgentTemplate component only');
-    
-    // 🔒 ENFORCE: Block all other navigation in single-agent mode
     return (
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen 
@@ -70,14 +44,12 @@ export default function ScreenLayout() {
           component={() => <SingleAgentTemplate />}
           options={{ 
             headerShown: false,
-            gestureEnabled: false, // Disable swipe back
+            gestureEnabled: false,
           }} 
         />
       </Stack>
     );
   }
-  
-  console.log('🔄 Multi-agent mode - showing tabs layout');
 
   return (
     <Stack

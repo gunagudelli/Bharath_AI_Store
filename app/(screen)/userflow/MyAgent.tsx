@@ -19,6 +19,7 @@ import {
 import { useSelector } from "react-redux";
 import BASE_URL from '../../../config';
 import { RootState } from "../../Redux/types";
+import { filterAgentsForMode } from '../../../utils/singleAgentMode';
 import FileUpload from './FileUpload';
 import ColoredScrollFlatList from './FlatlistScroll';
 import ImageUpload from './ImageUpload';
@@ -89,8 +90,10 @@ const AllAgentCreations: React.FC = () => {
       },
     })
       .then((response: AxiosResponse<AssistantsData>) => {
-        setAssistantsData(response.data);
-        setFilteredData(response.data);
+        const filteredAssistants = filterAgentsForMode(response.data.assistants || []);
+        const filteredData = { ...response.data, assistants: filteredAssistants };
+        setAssistantsData(filteredData);
+        setFilteredData(filteredData);
         setLoading(false);
       })
       .catch((error: any) => {

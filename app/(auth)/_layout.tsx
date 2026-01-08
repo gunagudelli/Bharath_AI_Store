@@ -3,7 +3,7 @@ import { Stack, Redirect } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/types';
 import Constants from 'expo-constants';
-import SingleAgentDashboard from '../../components/SingleAgentDashboard';
+import SingleAgentTemplate from '../../templates/SingleAgentTemplate';
 
 export default function AuthLayout() {
   const userData = useSelector((state: RootState) => state.userData);
@@ -19,21 +19,10 @@ export default function AuthLayout() {
   const agentId = envAgentId || 
     (constantsAgentId && typeof constantsAgentId === 'string' ? constantsAgentId : null);
   
-  console.log('🔐 AuthLayout state:', {
-    isAuthenticated,
-    isOnboardingCompleted,
-    envAgentId,
-    constantsAgentId: typeof constantsAgentId,
-    finalAgentId: agentId,
-    isSingleAgentMode: !!agentId
-  });
-
   if (isAuthenticated) {
     if (agentId) {
-      console.log('🎯 Redirecting to Single Agent Dashboard');
-      return <SingleAgentDashboard />;
+      return <SingleAgentTemplate />;
     }
-    console.log('🏪 Redirecting to multi-agent store');
     return <Redirect href="/(screen)/(tabs)" />;
   }
 

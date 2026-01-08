@@ -97,7 +97,6 @@ const BharathAgentstore: React.FC = () => {
 
   // Fetch agents (unchanged)
   const getAgents = async (afterId: string | null = null, append: boolean = false): Promise<void> => {
-    console.log("Fetching agents, afterId:", afterId, "append:", append);
     try {
       if (!append) {
         setLoading(true);
@@ -105,7 +104,6 @@ const BharathAgentstore: React.FC = () => {
         setLoadingMore(true);
       }
       let url = `${BASE_URL}ai-service/agent/getAllAssistants?limit=50`;
-      console.log("Fetch URL:", url);
       if (afterId) {
         url += `&after=${afterId}`;
       }
@@ -115,24 +113,17 @@ const BharathAgentstore: React.FC = () => {
           Authorization: `Bearer ${userData?.accessToken || ""}`,
         },
       });
-      console.log("Fetch agents response:", response.data);
-      console.log("Response status:", response.status);
       
       const result: ApiResponse = response.data;
       if (result?.data && Array.isArray(result.data)) {
-        console.log("Raw agents from API:", result.data.length);
         
         const approvedAgents: AgentItem[] = result.data.filter(
           (agent: AgentItem) => {
-            console.log("Agent status:", agent.status, "Name:", agent.name);
             return agent.status === "APPROVED";
           }
         );
         
-        console.log("Approved agents:", approvedAgents.length);
-        
         let agentsWithCustom: AgentItem[];
-        // ✅ Always prepend custom agents
         if (!lastId) {
           agentsWithCustom = [...CUSTOM_AGENTS, ...approvedAgents];
         } else {
@@ -146,14 +137,11 @@ const BharathAgentstore: React.FC = () => {
         }
         setLastId(nextCursor);
         if (result.totalCount !== undefined) setTotalCount(result.totalCount);
-        console.log("Final agents loaded:", agentsWithCustom.length);
       } else {
-        console.log("No data received or invalid format. Response:", result);
         if (!append) setAgents([]);
       }
     } catch (error: any) {
       console.error("Fetch agents error:", error?.message || 'Unknown error');
-      console.error("Error details:", error?.response?.data || 'No additional details');
       Alert.alert("Error", "Failed to load assistants.");
       if (!afterId) setAgents([]);
     } finally {
@@ -262,9 +250,8 @@ const BharathAgentstore: React.FC = () => {
   // Fixed: Use useFocusEffect properly
   useFocusEffect(
     React.useCallback(() => {
-      console.log("Screen focused, loading agents...");
       getAgents(null, false);
-      checkForOngoingBuilds(); // Check for ongoing builds
+      checkForOngoingBuilds();
     }, [])
   );
   
@@ -301,13 +288,10 @@ const BharathAgentstore: React.FC = () => {
   // Updated: Local filtering (always applies search to agents)
   useEffect(() => {
     console.log("Filtering local agents, total:", agents.length);
-    console.log("Sample agent data:", agents[0]); // Debug log
-    console.log("Single agent mode:", isSingleAgentMode());
     
     let filtered: AgentItem[] = agents.filter((agent: AgentItem) => {
       const a: AgentItem = agent.assistant || agent;
       
-      // More robust text search - handle undefined values
       const searchableText = [
         a.name || '',
         a.instructions || '',
@@ -317,39 +301,14 @@ const BharathAgentstore: React.FC = () => {
       
       const searchTerm = search.toLowerCase().trim();
       
-      // If no search term, show all agents
       if (!searchTerm) return true;
       
       return searchableText.includes(searchTerm);
     });
     
-    console.log('🔍 Before single-agent filtering:', {
-      totalAgents: filtered.length,
-      isSingleMode: isSingleAgentMode(),
-      sampleAgent: filtered[0] ? {
-        name: filtered[0].name,
-        id: filtered[0].id,
-        assistantId: filtered[0].assistantId,
-        agentId: filtered[0].agentId
-      } : null
-    });
-    
-    // 🔥 CRITICAL: Filter for single-agent mode in production APKs
     filtered = filterAgentsForMode(filtered);
     
-    console.log('🔍 After single-agent filtering:', {
-      finalCount: filtered.length,
-      agents: filtered.map(a => ({
-        name: a.name,
-        id: a.id,
-        assistantId: a.assistantId,
-        agentId: a.agentId
-      }))
-    });
-    
     setLocalAgents(filtered);
-    console.log("Local filtered agents:", filtered.length);
-    console.log("Search term:", search);
   }, [agents, search]);
 
   // New: Debounced web search effect
