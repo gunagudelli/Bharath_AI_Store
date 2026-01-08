@@ -24,7 +24,7 @@ export default ({ config }) => {
 
   return {
     ...config,
-    name: isSingleAgent ? agentName : "Bharath AI Store",
+    name: "Bharath AI Store",
     slug: "bharath-ai-automation",
     version: "1.0.0",
     orientation: "portrait",
@@ -38,9 +38,7 @@ export default ({ config }) => {
     assetBundlePatterns: ["**/*"],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: isSingleAgent
-        ? "com.bharath.agent"
-        : "com.bharath.store"
+      bundleIdentifier: "com.bharath.store"
     },
     android: {
       adaptiveIcon: {
@@ -48,9 +46,7 @@ export default ({ config }) => {
         backgroundImage: "./assets/images/android-icon-background.png",
         monochromeImage: "./assets/images/android-icon-monochrome.png"
       },
-      package: isSingleAgent
-        ? "com.bharath.agent"
-        : "com.bharath.store"
+      package: "com.bharath.store"
     },
     web: {
       favicon: "./assets/images/favicon.png",

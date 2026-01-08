@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Constants from 'expo-constants';
 import axios from 'axios';
 import BASE_URL from '../config';
+import DebugInfo from '../components/DebugInfo';
 
 interface Agent {
   id?: string;
@@ -45,7 +46,11 @@ const SingleAgentTemplate: React.FC = () => {
       const targetAgentName = Constants.expoConfig?.extra?.agentName || 
                              Constants.manifest?.extra?.agentName;
       
-
+      console.log('🎯 Target agent config:', {
+        targetAgentId,
+        targetAgentName,
+        hasToken: !!userData?.accessToken
+      });
 
       if (!targetAgentId || targetAgentId === '{}') {
         throw new Error('Agent ID not found in APK configuration');
@@ -53,7 +58,7 @@ const SingleAgentTemplate: React.FC = () => {
 
       // Skip API if we have both ID and name (APK best practice)
       if (targetAgentId && targetAgentName) {
-
+        console.log('✅ Using environment config directly (no API dependency)');
         setAgent({
           assistantId: targetAgentId,
           name: targetAgentName,
@@ -94,7 +99,7 @@ const SingleAgentTemplate: React.FC = () => {
         });
       }
     } catch (error: any) {
-
+      console.error('❌ Error fetching agent:', error?.message);
       
       const fallbackId = Constants.expoConfig?.extra?.agentId || Constants.manifest?.extra?.agentId;
       const fallbackName = Constants.expoConfig?.extra?.agentName || Constants.manifest?.extra?.agentName;
@@ -140,7 +145,7 @@ const SingleAgentTemplate: React.FC = () => {
       });
     } else {
       router.push({
-        pathname: '/userflow/GenOxyChatScreen',
+        pathname: '/(screen)/userflow/GenOxyChatScreen',
         params: {
           assistantId: assistantId,
           query: "",
@@ -184,6 +189,7 @@ const SingleAgentTemplate: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <DebugInfo />
       <LinearGradient colors={['#E3F2FD', '#BBDEFB']} style={styles.gradient}>
         <View style={styles.header}>
           <Text style={styles.welcomeText}>Welcome to</Text>

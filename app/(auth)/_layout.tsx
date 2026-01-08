@@ -20,9 +20,10 @@ export default function AuthLayout() {
     (constantsAgentId && typeof constantsAgentId === 'string' ? constantsAgentId : null);
   
   if (isAuthenticated) {
-    if (agentId) {
-      return <SingleAgentTemplate />;
-    }
+    // DISABLED: Always go to multi-agent store, ignore single-agent mode
+    // if (agentId) {
+    //   return <SingleAgentTemplate />;
+    // }
     return <Redirect href="/(screen)/(tabs)" />;
   }
 
