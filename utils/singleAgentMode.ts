@@ -1,21 +1,18 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 
-// 🔥 ROBUST single-agent detection
+// 🔥 RUNTIME agent detection (reads from process.env)
 export const isSingleAgentMode = (): boolean => {
-  // 🔥 SAFE: Use Constants instead of process.env in components
-  const constantsAgentId = Constants.expoConfig?.extra?.agentId;
-  const manifestAgentId = Constants.manifest?.extra?.agentId;
+  // ✅ Read directly from process.env at RUNTIME
+  const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
+  const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
   
-  const agentId = constantsAgentId || manifestAgentId;
+  const isValid = typeof agentId === 'string' && agentId.trim() !== '' && agentId !== '{}' &&
+                  typeof agentName === 'string' && agentName.trim() !== '';
   
-  // Ensure it's a valid string, not an object or empty
-  const isValid = typeof agentId === 'string' && agentId.trim() !== '' && agentId !== '{}';
-  
-  console.log('🔍 isSingleAgentMode check:', {
-    constantsAgentId,
-    manifestAgentId,
-    finalAgentId: agentId,
+  console.log('🔍 isSingleAgentMode (RUNTIME check):', {
+    agentId,
+    agentName,
     isValid,
     result: isValid
   });
@@ -50,15 +47,9 @@ export const enforceNavigationRestrictions = () => {
 };
 
 export const getSingleAgentConfig = () => {
-  // 🔥 SAFE: Use Constants instead of process.env in components
-  const constantsAgentId = Constants.expoConfig?.extra?.agentId;
-  const manifestAgentId = Constants.manifest?.extra?.agentId;
-  
-  const constantsAgentName = Constants.expoConfig?.extra?.agentName;
-  const manifestAgentName = Constants.manifest?.extra?.agentName;
-  
-  const agentId = constantsAgentId || manifestAgentId;
-  const agentName = constantsAgentName || manifestAgentName;
+  // ✅ Read directly from process.env at RUNTIME
+  const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
+  const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
   
   return {
     agentId: typeof agentId === 'string' && agentId.trim() !== '' && agentId !== '{}' ? agentId : '',

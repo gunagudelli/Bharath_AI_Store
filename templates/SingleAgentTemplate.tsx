@@ -40,13 +40,11 @@ const SingleAgentTemplate: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const targetAgentId = Constants.expoConfig?.extra?.agentId || 
-                           Constants.manifest?.extra?.agentId;
+      // ✅ Read from process.env at RUNTIME
+      const targetAgentId = process.env.EXPO_PUBLIC_AGENT_ID;
+      const targetAgentName = process.env.EXPO_PUBLIC_AGENT_NAME;
       
-      const targetAgentName = Constants.expoConfig?.extra?.agentName || 
-                             Constants.manifest?.extra?.agentName;
-      
-      console.log('🎯 Target agent config:', {
+      console.log('🎯 Target agent config (RUNTIME):', {
         targetAgentId,
         targetAgentName,
         hasToken: !!userData?.accessToken
@@ -101,8 +99,9 @@ const SingleAgentTemplate: React.FC = () => {
     } catch (error: any) {
       console.error('❌ Error fetching agent:', error?.message);
       
-      const fallbackId = Constants.expoConfig?.extra?.agentId || Constants.manifest?.extra?.agentId;
-      const fallbackName = Constants.expoConfig?.extra?.agentName || Constants.manifest?.extra?.agentName;
+      // ✅ Fallback to process.env at RUNTIME
+      const fallbackId = process.env.EXPO_PUBLIC_AGENT_ID;
+      const fallbackName = process.env.EXPO_PUBLIC_AGENT_NAME;
       
       if (fallbackId && fallbackName) {
         setAgent({

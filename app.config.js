@@ -1,33 +1,13 @@
-// app.config.js - Dynamic configuration for agent-specific APKs
+// app.config.js - Static configuration (agent data read at RUNTIME)
 export default ({ config }) => {
-  const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
-  const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
-  const buildId = process.env.EXPO_PUBLIC_BUILD_ID;
+  // ❌ DON'T read agent data here - not available at build time!
+  // ✅ Agent data will be read at RUNTIME using process.env.EXPO_PUBLIC_*
   
-  // const isSingleAgent = !!(agentId && agentName && agentId !== '{}' && agentName !== '{}');
-  const isSingleAgent =
-    !!process.env.EXPO_PUBLIC_AGENT_ID &&
-    !!process.env.EXPO_PUBLIC_AGENT_NAME;
-  
-  // 🔥 CRITICAL DEBUG: Log all environment variables
-  console.log('🔍 Environment Variables Debug:', {
-    EXPO_PUBLIC_AGENT_ID: process.env.EXPO_PUBLIC_AGENT_ID,
-    EXPO_PUBLIC_AGENT_NAME: process.env.EXPO_PUBLIC_AGENT_NAME,
-    EXPO_PUBLIC_BUILD_ID: process.env.EXPO_PUBLIC_BUILD_ID,
-    NODE_ENV: process.env.NODE_ENV,
-    EAS_BUILD: process.env.EAS_BUILD
-  });
-  
-  console.log('🔧 App Config Result:', {
-    agentId,
-    agentName,
-    buildId,
-    isSingleAgent
-  });
+  console.log('🔧 App Config - Build Time (agent data NOT available here)');
 
   return {
     ...config,
-    name: process.env.EXPO_PUBLIC_AGENT_NAME || "Bharath AI Store",
+    name: "Bharath AI Store",
     slug: "bharath-ai-automation",
     version: "1.0.0",
     orientation: "portrait",
@@ -74,11 +54,7 @@ export default ({ config }) => {
       typedRoutes: true
     },
     extra: {
-      singleAgent: isSingleAgent,
-      isSingleAgent: isSingleAgent,
-      agentId: process.env.EXPO_PUBLIC_AGENT_ID || null,
-      agentName: process.env.EXPO_PUBLIC_AGENT_NAME || null,
-      buildId: process.env.EXPO_PUBLIC_BUILD_ID || null,
+      // ✅ These will be populated at RUNTIME, not build-time
       router: {
         origin: false
       },
