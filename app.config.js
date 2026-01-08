@@ -4,7 +4,10 @@ export default ({ config }) => {
   const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
   const buildId = process.env.EXPO_PUBLIC_BUILD_ID;
   
-  const isSingleAgent = !!(agentId && agentName && agentId !== '{}' && agentName !== '{}');
+  // const isSingleAgent = !!(agentId && agentName && agentId !== '{}' && agentName !== '{}');
+  const isSingleAgent =
+    !!process.env.EXPO_PUBLIC_AGENT_ID &&
+    !!process.env.EXPO_PUBLIC_AGENT_NAME;
   
   // 🔥 CRITICAL DEBUG: Log all environment variables
   console.log('🔍 Environment Variables Debug:', {
@@ -24,7 +27,7 @@ export default ({ config }) => {
 
   return {
     ...config,
-    name: "Bharath AI Store",
+    name: process.env.EXPO_PUBLIC_AGENT_NAME || "Bharath AI Store",
     slug: "bharath-ai-automation",
     version: "1.0.0",
     orientation: "portrait",
@@ -73,8 +76,8 @@ export default ({ config }) => {
     extra: {
       singleAgent: isSingleAgent,
       isSingleAgent: isSingleAgent,
-      agentId: agentId || null,
-      agentName: agentName || null,
+      agentId: process.env.EXPO_PUBLIC_AGENT_ID || null,
+      agentName: process.env.EXPO_PUBLIC_AGENT_NAME || null,
       buildId: process.env.EXPO_PUBLIC_BUILD_ID || null,
       router: {
         origin: false
