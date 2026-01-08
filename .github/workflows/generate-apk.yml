@@ -59,11 +59,14 @@ jobs:
           echo "EXPO_PUBLIC_AGENT_NAME: $EXPO_PUBLIC_AGENT_NAME"
           echo "EXPO_PUBLIC_BUILD_ID: $EXPO_PUBLIC_BUILD_ID"
           echo "📱 Using Expo-managed credentials (remote)"
+          
+          # Build with explicit env var passing
           npx eas build \
             --platform android \
             --profile agent-apk \
             --non-interactive \
-            --no-wait
+            --no-wait \
+            --message "Single-agent APK: $EXPO_PUBLIC_AGENT_NAME"
 
       # 7️⃣ Get APK download URL
       - name: Get APK Download URL

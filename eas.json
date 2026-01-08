@@ -8,13 +8,22 @@
       "android": {
         "buildType": "apk",
         "credentialsSource": "remote"
+      },
+      "env": {
+        "EXPO_PUBLIC_AGENT_ID": "",
+        "EXPO_PUBLIC_AGENT_NAME": ""
       }
     },
     "agent-apk": {
       "extends": "production",
+      "distribution": "internal",
       "android": {
         "buildType": "apk",
         "credentialsSource": "remote"
+      },
+      "env": {
+        "EXPO_PUBLIC_AGENT_ID": "",
+        "EXPO_PUBLIC_AGENT_NAME": ""
       }
     }
   },
