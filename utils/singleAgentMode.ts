@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { router } from 'expo-router';
 
 // 🔥 ROBUST single-agent detection
 export const isSingleAgentMode = (): boolean => {
@@ -20,6 +21,32 @@ export const isSingleAgentMode = (): boolean => {
   });
   
   return isValid;
+};
+
+// 🔒 NAVIGATION GUARD: Prevent navigation away from single-agent mode
+export const enforceNavigationRestrictions = () => {
+  if (!isSingleAgentMode()) return;
+  
+  // Block navigation to multi-agent screens
+  const blockedPaths = [
+    '/(screen)/(tabs)',
+    '/(screen)/(toptabs)',
+    '/AgentCreation',
+    '/userflow/MyAgent'
+  ];
+  
+  // Override router.push to block restricted paths
+  const originalPush = router.push;
+  router.push = (href: any) => {
+    const path = typeof href === 'string' ? href : href.pathname;
+    
+    if (blockedPaths.some(blocked => path?.includes(blocked))) {
+      console.log('🚫 BLOCKED: Navigation to', path, 'in single-agent mode');
+      return;
+    }
+    
+    return originalPush(href);
+  };
 };
 
 export const getSingleAgentConfig = () => {

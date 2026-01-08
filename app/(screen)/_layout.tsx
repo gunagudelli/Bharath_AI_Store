@@ -1,10 +1,11 @@
 // app/(screen)/_layout.tsx - Protected Group Layout
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Stack, Redirect, useLocalSearchParams } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/types'; // Adjust path to types
 import Constants from 'expo-constants';
 import SingleAgentTemplate from '../../templates/SingleAgentTemplate';
+import { enforceNavigationRestrictions } from '../../utils/singleAgentMode';
 
 // 🔥 Reliable single-agent detection
 const getSingleAgentConfig = () => {
@@ -36,6 +37,13 @@ export default function ScreenLayout() {
   const singleAgentId = getSingleAgentConfig();
   const isSingleAgent = !!singleAgentId;
   
+  // 🔒 ENFORCE: Activate navigation restrictions for single-agent mode
+  useEffect(() => {
+    if (isSingleAgent) {
+      enforceNavigationRestrictions();
+    }
+  }, [isSingleAgent]);
+  
   console.log('🎯 Layout Decision:', {
     isAuthenticated,
     isSingleAgent,
@@ -53,7 +61,20 @@ export default function ScreenLayout() {
     console.log('🎯 Single Agent Mode Activated for:', singleAgentId);
     console.log('🚫 Bypassing tabs/multi-agent layout');
     console.log('✅ Rendering SingleAgentTemplate component only');
-    return <SingleAgentTemplate />;
+    
+    // 🔒 ENFORCE: Block all other navigation in single-agent mode
+    return (
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen 
+          name="single-agent" 
+          component={() => <SingleAgentTemplate />}
+          options={{ 
+            headerShown: false,
+            gestureEnabled: false, // Disable swipe back
+          }} 
+        />
+      </Stack>
+    );
   }
   
   console.log('🔄 Multi-agent mode - showing tabs layout');
