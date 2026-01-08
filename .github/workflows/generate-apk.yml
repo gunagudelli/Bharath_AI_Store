@@ -38,6 +38,14 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: npx expo whoami
 
+      # 5.5️⃣ Setup Android credentials if needed
+      - name: Setup Android Credentials
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          echo "📱 Checking Android credentials..."
+          npx eas credentials --platform android --profile agent-apk || echo "Credentials already exist"
+
       # 6️⃣ Build APK using EAS with environment variables
       - name: Build APK with EAS
         env:
