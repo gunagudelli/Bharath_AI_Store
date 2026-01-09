@@ -3,19 +3,20 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import BharathAgentstore from '../(toptabs)';
 import RadhaAILab from '../(toptabs)/RadhaAILab';
 import { router } from 'expo-router';
+import Constants from 'expo-constants';
 
 export default function TabsIndex() {
   const [activeTab, setActiveTab] = useState('store');
 
   // 🔥 CHECK FOR SINGLE-AGENT MODE AT RUNTIME
   useEffect(() => {
-    const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
-    const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
+    const agentId = Constants.expoConfig?.extra?.agentId;
+    const agentName = Constants.expoConfig?.extra?.agentName;
     
     console.log('🔍 Single-Agent Check:', { agentId, agentName });
     
     // If single-agent mode, redirect directly to chat
-    if (agentId && agentName && agentId !== '{}') {
+    if (agentId && typeof agentId === 'string' && agentName && typeof agentName === 'string' && agentId !== 'null') {
       console.log('✅ Single-Agent Mode Detected - Redirecting to chat');
       
       router.replace({

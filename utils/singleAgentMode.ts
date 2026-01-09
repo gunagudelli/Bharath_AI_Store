@@ -1,14 +1,14 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 
-// 🔥 RUNTIME agent detection (reads from process.env)
+// 🔥 RUNTIME agent detection (reads from Constants.expoConfig.extra)
 export const isSingleAgentMode = (): boolean => {
-  // ✅ Read directly from process.env at RUNTIME
-  const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
-  const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
+  // ✅ Read from Constants.expoConfig.extra (baked at build time)
+  const agentId = Constants.expoConfig?.extra?.agentId;
+  const agentName = Constants.expoConfig?.extra?.agentName;
   
-  const isValid = typeof agentId === 'string' && agentId.trim() !== '' && agentId !== '{}' &&
-                  typeof agentName === 'string' && agentName.trim() !== '';
+  const isValid = agentId && typeof agentId === 'string' && agentId.trim() !== '' && agentId !== 'null' &&
+                  agentName && typeof agentName === 'string' && agentName.trim() !== '';
   
   console.log('🔍 isSingleAgentMode (RUNTIME check):', {
     agentId,
@@ -47,13 +47,13 @@ export const enforceNavigationRestrictions = () => {
 };
 
 export const getSingleAgentConfig = () => {
-  // ✅ Read directly from process.env at RUNTIME
-  const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
-  const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
+  // ✅ Read from Constants.expoConfig.extra (baked at build time)
+  const agentId = Constants.expoConfig?.extra?.agentId;
+  const agentName = Constants.expoConfig?.extra?.agentName;
   
   return {
-    agentId: typeof agentId === 'string' && agentId.trim() !== '' && agentId !== '{}' ? agentId : '',
-    agentName: typeof agentName === 'string' && agentName.trim() !== '' ? agentName : 'AI Assistant'
+    agentId: (agentId && typeof agentId === 'string' && agentId.trim() !== '' && agentId !== 'null') ? agentId : '',
+    agentName: (agentName && typeof agentName === 'string' && agentName.trim() !== '') ? agentName : 'AI Assistant'
   };
 };
 

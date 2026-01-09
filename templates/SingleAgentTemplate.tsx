@@ -40,9 +40,9 @@ const SingleAgentTemplate: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // ✅ Read from process.env at RUNTIME
-      const targetAgentId = process.env.EXPO_PUBLIC_AGENT_ID;
-      const targetAgentName = process.env.EXPO_PUBLIC_AGENT_NAME;
+      // ✅ Read from Constants.expoConfig.extra (baked at build time)
+      const targetAgentId = Constants.expoConfig?.extra?.agentId;
+      const targetAgentName = Constants.expoConfig?.extra?.agentName;
       
       console.log('🎯 Target agent config (RUNTIME):', {
         targetAgentId,
@@ -50,12 +50,12 @@ const SingleAgentTemplate: React.FC = () => {
         hasToken: !!userData?.accessToken
       });
 
-      if (!targetAgentId || targetAgentId === '{}') {
+      if (!targetAgentId || typeof targetAgentId !== 'string' || targetAgentId === 'null') {
         throw new Error('Agent ID not found in APK configuration');
       }
 
       // Skip API if we have both ID and name (APK best practice)
-      if (targetAgentId && targetAgentName) {
+      if (targetAgentId && typeof targetAgentId === 'string' && targetAgentName && typeof targetAgentName === 'string') {
         console.log('✅ Using environment config directly (no API dependency)');
         setAgent({
           assistantId: targetAgentId,
@@ -99,9 +99,9 @@ const SingleAgentTemplate: React.FC = () => {
     } catch (error: any) {
       console.error('❌ Error fetching agent:', error?.message);
       
-      // ✅ Fallback to process.env at RUNTIME
-      const fallbackId = process.env.EXPO_PUBLIC_AGENT_ID;
-      const fallbackName = process.env.EXPO_PUBLIC_AGENT_NAME;
+      // ✅ Fallback to Constants.expoConfig.extra
+      const fallbackId = Constants.expoConfig?.extra?.agentId;
+      const fallbackName = Constants.expoConfig?.extra?.agentName;
       
       if (fallbackId && fallbackName) {
         setAgent({

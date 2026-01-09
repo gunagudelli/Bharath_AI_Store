@@ -1,13 +1,19 @@
-// app.config.js - Static configuration (agent data read at RUNTIME)
+// app.config.js - Inject agent data at BUILD TIME
 export default ({ config }) => {
-  // ❌ DON'T read agent data here - not available at build time!
-  // ✅ Agent data will be read at RUNTIME using process.env.EXPO_PUBLIC_*
+  // ✅ Read from environment at BUILD TIME (GitHub Actions)
+  const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
+  const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
+  const buildId = process.env.EXPO_PUBLIC_BUILD_ID;
   
-  console.log('🔧 App Config - Build Time (agent data NOT available here)');
+  console.log('🔧 App Config - Build Time:', {
+    agentId,
+    agentName,
+    buildId
+  });
 
   return {
     ...config,
-    name: "Bharath AI Store",
+    name: agentName || "Bharath AI Store",
     slug: "bharath-ai-automation",
     version: "1.0.0",
     orientation: "portrait",
@@ -54,7 +60,10 @@ export default ({ config }) => {
       typedRoutes: true
     },
     extra: {
-      // ✅ These will be populated at RUNTIME, not build-time
+      // ✅ BAKE agent data into APK at build time (only if valid)
+      agentId: (agentId && agentId !== 'undefined') ? agentId : undefined,
+      agentName: (agentName && agentName !== 'undefined') ? agentName : undefined,
+      buildId: (buildId && buildId !== 'undefined') ? buildId : undefined,
       router: {
         origin: false
       },

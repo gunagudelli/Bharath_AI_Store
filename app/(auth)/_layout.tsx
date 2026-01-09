@@ -12,9 +12,9 @@ export default function AuthLayout() {
   const isOnboardingCompleted = onboardingState?.isCompleted;
   
   // 🔥 Check for single-agent mode at RUNTIME
-  const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
-  const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
-  const isSingleAgent = !!(agentId && agentName && agentId !== '{}');
+  const agentId = Constants.expoConfig?.extra?.agentId;
+  const agentName = Constants.expoConfig?.extra?.agentName;
+  const isSingleAgent = !!(agentId && typeof agentId === 'string' && agentName && typeof agentName === 'string' && agentId !== 'null');
   
   console.log('🔍 Auth Layout - Single Agent Check:', { agentId, agentName, isSingleAgent, isAuthenticated });
   
