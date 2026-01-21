@@ -54,26 +54,15 @@ jobs:
           EXPO_PUBLIC_AGENT_NAME: ${{ github.event.client_payload.agentName }}
           EXPO_PUBLIC_BUILD_ID: ${{ github.event.client_payload.buildId }}
         run: |
-          echo "🔥 Setting up environment for EAS build"
+          echo "🔥 Setting EAS environment secrets"
           echo "EXPO_PUBLIC_AGENT_ID: $EXPO_PUBLIC_AGENT_ID"
           echo "EXPO_PUBLIC_AGENT_NAME: $EXPO_PUBLIC_AGENT_NAME"
-          echo "EXPO_PUBLIC_BUILD_ID: $EXPO_PUBLIC_BUILD_ID"
           
-          # Write to .env file for EAS to read during build
-          echo "EXPO_PUBLIC_AGENT_ID=$EXPO_PUBLIC_AGENT_ID" > .env
-          echo "EXPO_PUBLIC_AGENT_NAME=$EXPO_PUBLIC_AGENT_NAME" >> .env
-          echo "EXPO_PUBLIC_BUILD_ID=$EXPO_PUBLIC_BUILD_ID" >> .env
+          # Set environment variables as EAS secrets for this build
+          npx eas env:create EXPO_PUBLIC_AGENT_ID --value "$EXPO_PUBLIC_AGENT_ID" --force || true
+          npx eas env:create EXPO_PUBLIC_AGENT_NAME --value "$EXPO_PUBLIC_AGENT_NAME" --force || true
           
-          echo "📄 .env file created:"
-          cat .env
-          
-          # Commit .env to trigger build with these values (force add since it's in .gitignore)
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add -f .env
-          git commit -m "temp: Add .env for build $EXPO_PUBLIC_BUILD_ID" || true
-          
-          # Build on EAS cloud (will read .env file)
+          # Trigger build
           npx eas build \
             --platform android \
             --profile agent-apk \
@@ -81,8 +70,10 @@ jobs:
             --no-wait \
             --message "Single-agent APK: $EXPO_PUBLIC_AGENT_NAME"
           
-          # Clean up .env after build starts
-          git reset HEAD~1 --hard || true
+          # Clean up secrets after build starts
+          sleep 5
+          npx eas env:delete EXPO_PUBLIC_AGENT_ID --non-interactive || true
+          npx eas env:delete EXPO_PUBLIC_AGENT_NAME --non-interactive || true
 
       # 7️⃣ Get APK download URL
       - name: Get APK Download URL

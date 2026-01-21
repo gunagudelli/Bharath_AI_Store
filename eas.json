@@ -16,6 +16,10 @@
       "android": {
         "buildType": "apk",
         "credentialsSource": "remote"
+      },
+      "env": {
+        "EXPO_PUBLIC_AGENT_ID": "secret:EXPO_PUBLIC_AGENT_ID",
+        "EXPO_PUBLIC_AGENT_NAME": "secret:EXPO_PUBLIC_AGENT_NAME"
       }
     }
   },
