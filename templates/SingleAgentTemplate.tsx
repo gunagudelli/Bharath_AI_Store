@@ -47,55 +47,25 @@ const SingleAgentTemplate: React.FC = () => {
       console.log('🎯 Target agent config (RUNTIME):', {
         targetAgentId,
         targetAgentName,
+        fullExtra: Constants.expoConfig?.extra,
         hasToken: !!userData?.accessToken
       });
 
-      if (!targetAgentId || typeof targetAgentId !== 'string' || targetAgentId === 'null') {
-        throw new Error('Agent ID not found in APK configuration');
+      // Check if agent data exists and is valid
+      if (!targetAgentId || !targetAgentName || 
+          typeof targetAgentId !== 'string' || typeof targetAgentName !== 'string' ||
+          targetAgentId === 'null' || targetAgentId.startsWith('secret:')) {
+        throw new Error(`Agent data not found or invalid: ID=${targetAgentId}, Name=${targetAgentName}`);
       }
 
-      // Skip API if we have both ID and name (APK best practice)
-      if (targetAgentId && typeof targetAgentId === 'string' && targetAgentName && typeof targetAgentName === 'string') {
-        console.log('✅ Using environment config directly (no API dependency)');
-        setAgent({
-          assistantId: targetAgentId,
-          name: targetAgentName,
-          description: 'Your AI assistant',
-        });
-        return;
-      }
-
-      // Fetch from API if needed
-      const response = await axios.get(`${BASE_URL}ai-service/agent/getAllAssistants?limit=100`, {
-        headers: {
-          Accept: "*/*",
-          Authorization: `Bearer ${userData.accessToken}`,
-        },
-        timeout: 10000,
+      // Use environment config directly (no API call needed)
+      console.log('✅ Using environment config directly (no API dependency)');
+      setAgent({
+        assistantId: targetAgentId,
+        name: targetAgentName,
+        description: 'Your AI assistant',
       });
-
-      const agents = response.data?.data || [];
-      const foundAgent = agents.find((a: any) => 
-        String(a.id) === String(targetAgentId) ||
-        String(a.assistantId) === String(targetAgentId) ||
-        String(a.agentId) === String(targetAgentId)
-      );
-
-      if (foundAgent) {
-        setAgent({
-          id: foundAgent.id,
-          assistantId: foundAgent.assistantId,
-          agentId: foundAgent.agentId,
-          name: foundAgent.name,
-          description: foundAgent.description || foundAgent.instructions,
-        });
-      } else {
-        setAgent({
-          assistantId: targetAgentId,
-          name: targetAgentName || 'AI Assistant',
-          description: 'Your AI assistant',
-        });
-      }
+      setLoading(false);
     } catch (error: any) {
       console.error('❌ Error fetching agent:', error?.message);
       
