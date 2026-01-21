@@ -56,8 +56,9 @@ export default ({ config }) => {
       typedRoutes: true
     },
     extra: {
-      agentId: agentId || undefined,
-      agentName: agentName || undefined,
+      agentId: agentId ?? null,
+      agentName: agentName ?? null,
+      isSingleAgent: !!(agentId && agentName),
       router: {
         origin: false
       },
