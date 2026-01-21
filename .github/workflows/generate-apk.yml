@@ -9,44 +9,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node.js (Expo requires Node 20 now)
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      # 3️⃣ Install dependencies with clean cache
       - name: Install dependencies
-        run: |
-          npm ci --legacy-peer-deps
-          echo "Dependencies installed successfully"
+        run: npm ci --legacy-peer-deps
 
-      # 4️⃣ Install EAS CLI only
       - name: Install EAS CLI
-        run: |
-          npm install -g eas-cli@latest
-          echo "Verifying EAS CLI installation..."
-          npx eas --version
+        run: npm install -g eas-cli@latest
 
-      # 5️⃣ Verify Expo authentication via token
       - name: Verify Expo Authentication
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: npx expo whoami
 
-      # 5.5️⃣ Setup Android credentials if needed
-      - name: Setup Android Credentials
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          echo "📱 Checking Android credentials..."
-          npx eas credentials --platform android --profile agent-apk || echo "Credentials already exist"
-
-      # 6️⃣ Build APK using EAS with environment variables
+      # ✅ BUILD — THIS IS THE ONLY PLACE ENV VARS ARE SET
       - name: Build APK with EAS
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
@@ -72,55 +54,21 @@ jobs:
       - name: Get APK Download URL
         id: get-apk
         run: |
-          echo "📥 Getting APK download URL..."
           APK_DATA=$(npx eas build:list --platform=android --limit=1 --json)
-          echo "Raw APK data: $APK_DATA"
-          APK_URL=$(echo "$APK_DATA" | jq -r '.[0].artifacts.buildUrl // empty')
-          if [ -z "$APK_URL" ] || [ "$APK_URL" = "null" ]; then
-            echo "❌ No APK URL found"
-            APK_URL="https://expo.dev/artifacts/eas/build-not-found"
-          fi
+          APK_URL=$(echo "$APK_DATA" | jq -r '.[0].artifacts.buildUrl')
           echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
-          echo "📱 APK URL: $APK_URL"
 
-      # 8️⃣ Notify backend on SUCCESS
       - name: Notify Backend Success
         if: success()
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
-          if [ -z "$WEBHOOK_URL" ]; then
-            echo "⚠️ WEBHOOK_URL not set, skipping notification"
-            exit 0
-          fi
-          echo "📡 Notifying backend at: $WEBHOOK_URL"
-          curl -v -X POST "$WEBHOOK_URL/build-webhook" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "buildId": "${{ github.event.client_payload.buildId }}",
-              "agentId": "${{ github.event.client_payload.agentId }}",
-              "agentName": "${{ github.event.client_payload.agentName }}",
-              "status": "completed",
-              "artifacts": {
-                "apkUrl": "${{ steps.get-apk.outputs.apk_url }}"
-              }
-            }' || echo "❌ Failed to notify backend"
-
-      # 9️⃣ Notify backend on FAILURE
-      - name: Notify Backend Failure
-        if: failure()
-        env:
-          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
-        run: |
-          if [ -z "$WEBHOOK_URL" ]; then
-            echo "⚠️ WEBHOOK_URL not set, skipping notification"
-            exit 0
-          fi
           curl -X POST "$WEBHOOK_URL/build-webhook" \
             -H "Content-Type: application/json" \
             -d '{
               "buildId": "${{ github.event.client_payload.buildId }}",
               "agentId": "${{ github.event.client_payload.agentId }}",
               "agentName": "${{ github.event.client_payload.agentName }}",
-              "status": "failed"
+              "status": "completed",
+              "apkUrl": "${{ steps.get-apk.outputs.apk_url }}"
             }'
