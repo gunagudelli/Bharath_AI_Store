@@ -67,10 +67,10 @@ jobs:
           echo "📄 .env file created:"
           cat .env
           
-          # Commit .env to trigger build with these values
+          # Commit .env to trigger build with these values (force add since it's in .gitignore)
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add .env
+          git add -f .env
           git commit -m "temp: Add .env for build $EXPO_PUBLIC_BUILD_ID" || true
           
           # Build on EAS cloud (will read .env file)
