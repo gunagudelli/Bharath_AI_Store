@@ -54,19 +54,35 @@ jobs:
           EXPO_PUBLIC_AGENT_NAME: ${{ github.event.client_payload.agentName }}
           EXPO_PUBLIC_BUILD_ID: ${{ github.event.client_payload.buildId }}
         run: |
-          echo "🔥 Forwarding env vars to EAS cloud"
+          echo "🔥 Setting up environment for EAS build"
           echo "EXPO_PUBLIC_AGENT_ID: $EXPO_PUBLIC_AGENT_ID"
           echo "EXPO_PUBLIC_AGENT_NAME: $EXPO_PUBLIC_AGENT_NAME"
           echo "EXPO_PUBLIC_BUILD_ID: $EXPO_PUBLIC_BUILD_ID"
-          echo "📱 Using Expo-managed credentials (remote)"
           
-          # Build with explicit env var passing
+          # Write to .env file for EAS to read during build
+          echo "EXPO_PUBLIC_AGENT_ID=$EXPO_PUBLIC_AGENT_ID" > .env
+          echo "EXPO_PUBLIC_AGENT_NAME=$EXPO_PUBLIC_AGENT_NAME" >> .env
+          echo "EXPO_PUBLIC_BUILD_ID=$EXPO_PUBLIC_BUILD_ID" >> .env
+          
+          echo "📄 .env file created:"
+          cat .env
+          
+          # Commit .env to trigger build with these values
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .env
+          git commit -m "temp: Add .env for build $EXPO_PUBLIC_BUILD_ID" || true
+          
+          # Build on EAS cloud (will read .env file)
           npx eas build \
             --platform android \
             --profile agent-apk \
             --non-interactive \
             --no-wait \
             --message "Single-agent APK: $EXPO_PUBLIC_AGENT_NAME"
+          
+          # Clean up .env after build starts
+          git reset HEAD~1 --hard || true
 
       # 7️⃣ Get APK download URL
       - name: Get APK Download URL
