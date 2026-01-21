@@ -19,7 +19,7 @@ const config = (value?: unknown, value1?: unknown): string => {
 };
 
 // Local backend URL for APK generation - use your computer's IP
-export const APK_BASE_URL = 'http://192.168.0.135:3000/';
+export const APK_BASE_URL = 'http://192.168.0.134:3000/';
 
 export const userStage = "test1";
 

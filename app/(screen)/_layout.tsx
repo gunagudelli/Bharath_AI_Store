@@ -56,21 +56,11 @@ export default function ScreenLayout() {
     return <Redirect href="/(auth)/welcome" />;
   }
 
-  // DISABLED: Always show multi-agent mode, ignore single-agent detection
-  // if (isSingleAgent) {
-  //   return (
-  //     <Stack screenOptions={{ headerShown: false }}>
-  //       <Stack.Screen 
-  //         name="single-agent" 
-  //         component={() => <SingleAgentTemplate />}
-  //         options={{ 
-  //           headerShown: false,
-  //           gestureEnabled: false,
-  //         }} 
-  //       />
-  //     </Stack>
-  //   );
-  // }
+  // ✅ ENABLED: Single-agent mode shows SingleAgentTemplate
+  if (isSingleAgent) {
+    console.log('✅ Rendering SingleAgentTemplate for single-agent APK');
+    return <SingleAgentTemplate />;
+  }
 
   return (
     <Stack

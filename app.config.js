@@ -1,20 +1,18 @@
-// app.config.js - Inject agent data at BUILD TIME
+// WORKING SOLUTION: Store agent ID in app name/slug at build time
+// This is the ONLY way that actually works with Expo
+
 export default ({ config }) => {
-  // ✅ Read from environment at BUILD TIME (GitHub Actions)
   const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
   const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
-  const buildId = process.env.EXPO_PUBLIC_BUILD_ID;
   
-  console.log('🔧 App Config - Build Time:', {
-    agentId,
-    agentName,
-    buildId
-  });
+  const slug = agentId ? `bharath-ai-${agentId}` : "bharath-ai-automation";
+  
+  console.log('🔧 Build Config:', { agentId, agentName, slug });
 
   return {
     ...config,
     name: agentName || "Bharath AI Store",
-    slug: "bharath-ai-automation",
+    slug: slug,
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -60,10 +58,8 @@ export default ({ config }) => {
       typedRoutes: true
     },
     extra: {
-      // ✅ BAKE agent data into APK at build time (only if valid)
-      agentId: (agentId && agentId !== 'undefined') ? agentId : undefined,
-      agentName: (agentName && agentName !== 'undefined') ? agentName : undefined,
-      buildId: (buildId && buildId !== 'undefined') ? buildId : undefined,
+      agentId: agentId || undefined,
+      agentName: agentName || undefined,
       router: {
         origin: false
       },
