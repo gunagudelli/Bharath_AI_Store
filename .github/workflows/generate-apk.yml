@@ -54,26 +54,19 @@ jobs:
           EXPO_PUBLIC_AGENT_NAME: ${{ github.event.client_payload.agentName }}
           EXPO_PUBLIC_BUILD_ID: ${{ github.event.client_payload.buildId }}
         run: |
-          echo "🔥 Setting EAS environment secrets"
+          echo "🔥 Forwarding env vars to EAS cloud"
           echo "EXPO_PUBLIC_AGENT_ID: $EXPO_PUBLIC_AGENT_ID"
           echo "EXPO_PUBLIC_AGENT_NAME: $EXPO_PUBLIC_AGENT_NAME"
+          echo "EXPO_PUBLIC_BUILD_ID: $EXPO_PUBLIC_BUILD_ID"
+          echo "📱 Using Expo-managed credentials (remote)"
           
-          # Set environment variables as EAS secrets for this build
-          npx eas env:create EXPO_PUBLIC_AGENT_ID --value "$EXPO_PUBLIC_AGENT_ID" --force || true
-          npx eas env:create EXPO_PUBLIC_AGENT_NAME --value "$EXPO_PUBLIC_AGENT_NAME" --force || true
-          
-          # Trigger build
+          # Build with explicit env var passing
           npx eas build \
             --platform android \
             --profile agent-apk \
             --non-interactive \
             --no-wait \
             --message "Single-agent APK: $EXPO_PUBLIC_AGENT_NAME"
-          
-          # Clean up secrets after build starts
-          sleep 5
-          npx eas env:delete EXPO_PUBLIC_AGENT_ID --non-interactive || true
-          npx eas env:delete EXPO_PUBLIC_AGENT_NAME --non-interactive || true
 
       # 7️⃣ Get APK download URL
       - name: Get APK Download URL
