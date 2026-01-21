@@ -5,14 +5,12 @@ export default ({ config }) => {
   const agentId = process.env.EXPO_PUBLIC_AGENT_ID;
   const agentName = process.env.EXPO_PUBLIC_AGENT_NAME;
   
-  const slug = agentId ? `bharath-ai-${agentId}` : "bharath-ai-automation";
-  
-  console.log('🔧 Build Config:', { agentId, agentName, slug });
+  console.log('🔧 Build Config:', { agentId, agentName });
 
   return {
     ...config,
     name: agentName || "Bharath AI Store",
-    slug: slug,
+    slug: "bharath-ai-automation",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
